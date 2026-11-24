@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Заметки — блог о привычках, тексте и внимании</title>
+<meta name="description" content="Небольшой блог: заметки о привычках, работе с текстом и внимании. Короткие тексты без расписания.">
+<meta name="theme-color" content="#fbf9f6">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://husien.jo3.org/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Заметки">
+<meta property="og:title" content="Заметки — блог о привычках, тексте и внимании">
+<meta property="og:description" content="Короткие тексты о внимании, привычках и ясности.">
+<meta property="og:url" content="https://husien.jo3.org/">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Blog",
+  "name": "Заметки",
+  "description": "Короткие тексты о внимании, привычках и ясности.",
+  "url": "https://husien.jo3.org/",
+  "inLanguage": "ru",
+  "blogPost": [
+    {
+      "@type": "BlogPosting",
+      "headline": "Зачем вести заметки, если всё помнит телефон",
+      "datePublished": "2026-11-18",
+      "url": "https://husien.jo3.org/#/post/zachem-vesti-zametki"
+    },
+    {
+      "@type": "BlogPosting",
+      "headline": "Как читать больше, не читая быстрее",
+      "datePublished": "2026-11-09",
+      "url": "https://husien.jo3.org/#/post/kak-chitat-bolshe"
+    },
+    {
+      "@type": "BlogPosting",
+      "headline": "Правило одного проекта",
+      "datePublished": "2026-10-27",
+      "url": "https://husien.jo3.org/#/post/odin-proekt"
+    },
+    {
+      "@type": "BlogPosting",
+      "headline": "Простой текст — это не примитивный текст",
+      "datePublished": "2026-10-14",
+      "url": "https://husien.jo3.org/#/post/prostoy-tekst"
+    }
+  ]
+}
+</script>
+<style>
+  :root {
+    --bg: #fbf9f6;
+    --card: #ffffff;
+    --fg: #201d19;
+    --muted: #6d655c;
+    --border: #e6ded3;
+    --accent: #a8452a;
+    --shadow: 0 1px 2px rgba(32, 29, 25, .05), 0 8px 24px rgba(32, 29, 25, .05);
+  }
+
+  html[data-theme="dark"] {
+    --bg: #14130f;
+    --card: #1c1a16;
+    --fg: #eae5dc;
+    --muted: #9b9387;
+    --border: #322e27;
+    --accent: #e08a5f;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px rgba(0, 0, 0, .25);
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 17px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--accent); }
+
+  .wrap {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 20px 72px;
+  }
+
+  /* ── шапка ─────────────────────────────── */
+  header.site {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 26px 0 20px;
+  }
+
+  .brand {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .brand strong {
+    font-family: Georgia, ui-serif, "Times New Roman", serif;
+    font-size: 21px;
+    letter-spacing: -.01em;
+    font-weight: 600;
+  }
+
+  .brand span {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .header-actions { display: flex; align-items: center; gap: 8px; }
+
+  .ghost-btn {
+    padding: 9px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--fg);
+    font: inherit;
+    font-size: 14px;
+    text-decoration: none;
+    transition: border-color .15s ease, transform .15s ease;
+  }
+
+  .ghost-btn:hover { border-color: var(--accent); transform: translateY(-1px); }
+
+  .theme-btn {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--fg);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform .15s ease, border-color .15s ease;
+  }
+
+  .theme-btn:hover { transform: translateY(-1px); border-color: var(--accent); }
+  .theme-btn:active { transform: scale(.95); }
+
+  /* ── главная ───────────────────────────── */
+  .intro {
+    padding: 8px 0 26px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .intro h1 {
+    margin: 0 0 10px;
+    font-family: Georgia, ui-serif, "Times New Roman", serif;
+    font-size: clamp(28px, 7vw, 38px);
+    line-height: 1.15;
+    letter-spacing: -.02em;
+    font-weight: 600;
+  }
+
+  .intro p { margin: 0; color: var(--muted); max-width: 52ch; }
+
+  .search {
+    position: relative;
+    margin: 26px 0 6px;
+  }
+
+  .search input {
+    width: 100%;
+    padding: 13px 16px 13px 42px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--fg);
+    font: inherit;
+    font-size: 15px;
+    outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+
+  .search input::placeholder { color: var(--muted); }
+
+  .search input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
+  }
+
+  .search::before {
+    content: "⌕";
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 19px;
+    pointer-events: none;
+  }
+
+  .list { display: flex; flex-direction: column; gap: 14px; margin-top: 20px; }
+
+  .post-card {
+    display: block;
+    padding: 20px 22px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--card);
+    color: inherit;
+    text-decoration: none;
+    box-shadow: var(--shadow);
+    transition: transform .16s ease, border-color .16s ease;
+  }
+
+  .post-card:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  }
+
+  .card-meta, .post-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .tag {
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .post-card h2 {
+    margin: 10px 0 6px;
+    font-family: Georgia, ui-serif, "Times New Roman", serif;
+    font-size: 21px;
+    line-height: 1.3;
+    letter-spacing: -.01em;
+    font-weight: 600;
+  }
+
+  .post-card p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 15px;
+  }
+
+  .empty {
+    margin-top: 34px;
+    padding: 30px;
+    text-align: center;
+    color: var(--muted);
+    border: 1px dashed var(--border);
+    border-radius: 14px;
+  }
+
+  /* ── статья ────────────────────────────── */
+  .back {
+    display: inline-block;
+    margin: 4px 0 22px;
+    font-size: 14px;
+    text-decoration: none;
+    color: var(--muted);
+  }
+
+  .back:hover { color: var(--accent); }
+
+  article.post h1 {
+    margin: 12px 0 14px;
+    font-family: Georgia, ui-serif, "Times New Roman", serif;
+    font-size: clamp(26px, 6.6vw, 34px);
+    line-height: 1.2;
+    letter-spacing: -.02em;
+    font-weight: 600;
+  }
+
+  article.post .post-meta { margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+
+  article.post h2 {
+    margin: 34px 0 10px;
+    font-family: Georgia, ui-serif, "Times New Roman", serif;
+    font-size: 22px;
+    line-height: 1.3;
+    font-weight: 600;
+  }
+
+  article.post p { margin: 0 0 18px; }
+
+  article.post ul { margin: 0 0 18px; padding-left: 22px; }
+  article.post li { margin-bottom: 8px; }
+
+  blockquote {
+    margin: 24px 0;
+    padding: 4px 0 4px 18px;
+    border-left: 3px solid var(--accent);
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  footer.site {
+    margin-top: 56px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    justify-content: space-between;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="site">
+    <a class="brand" href="#/">
+      <strong>Заметки</strong>
+      <span>о внимании, тексте и привычках</span>
+    </a>
+    <div class="header-actions">
+      <a class="ghost-btn" href="galereya.html">Наши</a>
+      <button class="theme-btn" id="theme" type="button" aria-label="Сменить тему">☾</button>
+    </div>
+  </header>
+
+  <main id="view"></main>
+
+  <footer class="site">
+    <span>© 2026 Заметки</span>
+    <span>Сделано в MargyCode</span>
+  </footer>
+</div>
+
+<script>
+/* ─────────── Статьи ───────────
+   Чтобы добавить статью, скопируйте любой объект ниже
+   и поменяйте slug, date, tags, title, excerpt и body.
+   Slug — латиницей, без пробелов: он попадает в адрес страницы.
+*/
+const articles = [
+  {
+    slug: "zachem-vesti-zametki",
+    date: "2026-11-18",
+    tags: ["привычки", "мышление"],
+    title: "Зачем вести заметки, если всё помнит телефон",
+    excerpt: "Память хранит факты, но не связи между ними. Заметки — это способ думать медленнее и точнее.",
+    body: `
+      <p>Телефон помнит всё: пароли, встречи, номера. Но он не помнит, что вы подумали, когда читали статью в метро, и не связывает это с тем, что услышали через неделю.</p>
+      <p>Заметка — не архив. Это место, где мысль останавливается на секунду и становится видимой. Пока мысль в голове, она кажется очевидной; на бумаге сразу видно, где она рвётся.</p>
+      <h2>Три правила, которые сработали</h2>
+      <ul>
+        <li>Писать своими словами. Копипаста не думает.</li>
+        <li>Одна заметка — одна мысль. Иначе потом не найти.</li>
+        <li>Возвращаться раз в неделю и выкидывать лишнее.</li>
+      </ul>
+      <blockquote>Заметки нужны не для того, чтобы помнить, а для того, чтобы думать.</blockquote>
+      <p>Через месяц такой практики становится заметно: вы перестаёте заново изобретать решения, которые уже находили. Это и есть главная выгода — не память, а экономия мышления.</p>
+    `
+  },
+  {
+    slug: "kak-chitat-bolshe",
+    date: "2026-11-09",
+    tags: ["чтение"],
+    title: "Как читать больше, не читая быстрее",
+    excerpt: "Скорость чтения почти не влияет на количество книг. Влияет то, что происходит до и после.",
+    body: `
+      <p>Соблазн простой: научиться читать в два раза быстрее и прочитать в два раза больше. На практике скорость растёт вместе с потерей смысла, и книгу приходится перечитывать.</p>
+      <h2>Что работает лучше</h2>
+      <p>Держать книгу там, где вы бываете без дела: у кровати, в рюкзаке, на телефоне. Пять минут в очереди — это тоже чтение, и за неделю их набирается на главу.</p>
+      <p>Бросать книги без сожаления. Дочитывание из упрямства — самая дорогая привычка читателя: она съедает время, которое могло уйти на хорошее.</p>
+      <p>И записывать одну фразу после каждой главы. Не конспект — одну фразу. Этого достаточно, чтобы книга осталась, а не прошла насквозь.</p>
+    `
+  },
+  {
+    slug: "odin-proekt",
+    date: "2026-10-27",
+    tags: ["работа", "фокус"],
+    title: "Правило одного проекта",
+    excerpt: "Пять начатых дел утомляют сильнее, чем одно сложное. Потому что каждое висит в памяти.",
+    body: `
+      <p>Незаконченные задачи занимают место в голове даже когда мы о них не думаем. Пять открытых проектов — это пять фоновых процессов, и ни один не получает полной мощности.</p>
+      <h2>Как это выглядит на практике</h2>
+      <ul>
+        <li>В работе — один проект. Остальные лежат в списке «потом».</li>
+        <li>«Потом» — это честный список, а не свалка: у каждого пункта есть следующее действие.</li>
+        <li>Переключение разрешено, но осознанно: сначала закрыть текущий этап.</li>
+      </ul>
+      <p>Главный эффект не в скорости, а в спокойствии: когда проект один, о нём не надо помнить — он и так перед глазами.</p>
+    `
+  },
+  {
+    slug: "prostoy-tekst",
+    date: "2026-10-14",
+    tags: ["текст", "редактура"],
+    title: "Простой текст — это не примитивный текст",
+    excerpt: "Ясность требует работы, а не упрощения. Четыре приёма, которые делают черновик читаемым.",
+    body: `
+      <p>Кажется, что писать просто — значит писать короче и без терминов. Но простота появляется не от вычёркивания слов, а от ясности мысли: если непонятно, что вы хотите сказать, никакая редактура не спасёт.</p>
+      <h2>Четыре приёма</h2>
+      <ul>
+        <li>Глагол вместо отглагольного существительного: «мы решили» лучше, чем «было принято решение».</li>
+        <li>Одна мысль на абзац. Вторую — в следующий.</li>
+        <li>Конкретика вместо оценки: не «значительно выросло», а «выросло вдвое».</li>
+        <li>Прочитать вслух. Там, где спотыкаешься, — там плохо написано.</li>
+      </ul>
+      <blockquote>Хороший текст не замечаешь: замечаешь только плохой.</blockquote>
+      <p>И последнее: первый абзац почти всегда лишний. Он нужен автору, чтобы разогреться, а не читателю.</p>
+    `
+  }
+];
+
+/* ─────────── Утилиты ─────────── */
+const MONTHS = ["января", "февраля", "марта", "апреля", "мая", "июня",
+                "июля", "августа", "сентября", "октября", "ноября", "декабря"];
+
+function formatDate(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return d + " " + MONTHS[m - 1] + " " + y;
+}
+
+function readingTime(html) {
+  const words = html.replace(/<[^>]*>/g, " ").trim().split(/\s+/).length;
+  return Math.max(1, Math.round(words / 180)) + " мин чтения";
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+/* ─────────── Тема ─────────── */
+const root = document.documentElement;
+const themeBtn = document.getElementById("theme");
+
+function applyTheme(name) {
+  root.dataset.theme = name;
+  themeBtn.textContent = name === "dark" ? "☀" : "☾";
+  themeBtn.setAttribute("aria-label", name === "dark" ? "Светлая тема" : "Тёмная тема");
+}
+
+let saved = null;
+try { saved = localStorage.getItem("theme"); } catch (e) {}
+applyTheme(saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+
+themeBtn.addEventListener("click", () => {
+  const next = root.dataset.theme === "dark" ? "light" : "dark";
+  applyTheme(next);
+  try { localStorage.setItem("theme", next); } catch (e) {}
+});
+
+/* ─────────── Отрисовка ─────────── */
+const view = document.getElementById("view");
+
+function cardHTML(a) {
+  return `
+    <a class="post-card" href="#/post/${a.slug}">
+      <div class="card-meta">
+        <time datetime="${a.date}">${formatDate(a.date)}</time>
+        ${a.tags.map(t => `<span class="tag">${esc(t)}</span>`).join("")}
+      </div>
+      <h2>${esc(a.title)}</h2>
+      <p>${esc(a.excerpt)}</p>
+    </a>`;
+}
+
+function renderHome() {
+  document.title = "Заметки — блог";
+  view.innerHTML = `
+    <section class="intro">
+      <h1>Заметки о том, как думать и работать спокойнее</h1>
+      <p>Короткие тексты о внимании, привычках и ясности. Без расписания — как появляется повод.</p>
+    </section>
+    <div class="search">
+      <input id="q" type="search" placeholder="Поиск по статьям и тегам" autocomplete="off">
+    </div>
+    <div class="list" id="list">
+      ${articles.map(cardHTML).join("")}
+    </div>`;
+
+  const q = document.getElementById("q");
+  const list = document.getElementById("list");
+
+  q.addEventListener("input", () => {
+    const needle = q.value.trim().toLowerCase();
+    const found = articles.filter(a =>
+      (a.title + " " + a.excerpt + " " + a.tags.join(" ")).toLowerCase().includes(needle)
+    );
+
+    list.innerHTML = found.length
+      ? found.map(cardHTML).join("")
+      : `<div class="empty">Ничего не нашлось. Попробуйте другое слово.</div>`;
+  });
+}
+
+function renderPost(slug) {
+  const a = articles.find(x => x.slug === slug);
+
+  if (!a) {
+    document.title = "Статья не найдена";
+    view.innerHTML = `
+      <a class="back" href="#/">← Все статьи</a>
+      <div class="empty">Такой статьи нет. Возможно, ссылка устарела.</div>`;
+    return;
+  }
+
+  document.title = a.title + " — Заметки";
+  view.innerHTML = `
+    <a class="back" href="#/">← Все статьи</a>
+    <article class="post">
+      <div class="post-meta">
+        <time datetime="${a.date}">${formatDate(a.date)}</time>
+        <span>·</span>
+        <span>${readingTime(a.body)}</span>
+        ${a.tags.map(t => `<span class="tag">${esc(t)}</span>`).join("")}
+      </div>
+      <h1>${esc(a.title)}</h1>
+      ${a.body}
+    </article>`;
+}
+
+function route() {
+  const hash = location.hash.replace(/^#\/?/, "");
+
+  if (hash.startsWith("post/")) {
+    renderPost(decodeURIComponent(hash.slice(5)));
+  } else {
+    renderHome();
+  }
+
+  window.scrollTo(0, 0);
+}
+
+addEventListener("hashchange", route);
+route();
+</script>
+</body>
+</html>
