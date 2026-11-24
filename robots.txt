@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://husien.jo3.org/sitemap.xml
+Sitemap: https://hussiensosal.jo3.org/sitemap.xml
