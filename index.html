@@ -1188,6 +1188,8 @@
   const photoText = document.getElementById("photo-text");
 
   var openedPhoto = null;
+  var lastCommentsHtml = "";
+  var lastCommentsPhoto = null;
 
   function renderReacts(photoId) {
     photoReacts.innerHTML = EMOJI.map(function (e) {
@@ -1220,6 +1222,22 @@
   function renderComments(photoId) {
     var list = asArray(comments[photoId]).sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });
 
+    /* запоминаем открытые поля ответа и набранный в них текст,
+       чтобы обновление из облака их не сбрасывало */
+    var drafts = {};
+    var focusedCid = null;
+    var active = document.activeElement;
+
+    photoComments.querySelectorAll(".reply-box").forEach(function (b) {
+      var cid = b.getAttribute("data-box");
+      var ta = b.querySelector("textarea");
+      drafts[cid] = { open: !b.hidden, text: ta ? ta.value : "" };
+    });
+
+    if (active && active.closest && active.closest(".reply-box")) {
+      focusedCid = active.closest(".reply-box").getAttribute("data-box");
+    }
+
     if (!list.length) {
       photoComments.innerHTML = '<div class="empty-note">Комментариев пока нет. Будь первым.</div>';
       return;
@@ -1228,7 +1246,7 @@
     var rmap = replies[photoId] || {};
     var cmap = creacts[photoId] || {};
 
-    photoComments.innerHTML = list.map(function (c) {
+    var html = list.map(function (c) {
       var cid = c.key || "";
 
       var del = (isAdmin() && cid)
@@ -1260,6 +1278,32 @@
              "<div>" + esc(c.text) + "</div>" +
              ctrl + kidsBox + "</div>";
     }).join("");
+
+    /* если ничего не изменилось — не трогаем разметку вовсе */
+    if (html === lastCommentsHtml && lastCommentsPhoto === photoId) return;
+    lastCommentsHtml = html;
+    lastCommentsPhoto = photoId;
+    photoComments.innerHTML = html;
+
+    /* возвращаем открытые поля и текст на место */
+    photoComments.querySelectorAll(".reply-box").forEach(function (b) {
+      var cid = b.getAttribute("data-box");
+      var st = drafts[cid];
+      if (!st) return;
+
+      var ta = b.querySelector("textarea");
+      if (ta && st.text) ta.value = st.text;
+      if (st.open) b.hidden = false;
+    });
+
+    if (focusedCid) {
+      var same = photoComments.querySelector('[data-box="' + focusedCid + '"] textarea');
+      if (same) {
+        same.focus();
+        var end = same.value.length;
+        try { same.setSelectionRange(end, end); } catch (err) {}
+      }
+    }
   }
 
   function openPhoto(photoId, title) {
