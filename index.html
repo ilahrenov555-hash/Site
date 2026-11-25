@@ -313,6 +313,19 @@
   .chat-btn:hover { transform: scale(1.06); }
   .chat-btn svg { width: 24px; height: 24px; fill: #fff; }
 
+  .linkbtn {
+    margin-top: 16px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--violet);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .linkbtn:hover { text-decoration: underline; }
+
   /* ── нижняя панель ─────────────────────── */
   .sheet {
     position: fixed;
@@ -427,6 +440,82 @@
   }
 
   .comment .who-line b { color: var(--violet); font-weight: 600; }
+
+  /* ── реакции и ответы у комментария ── */
+  .creacts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+  .creact {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--fg);
+    font-size: 12.5px;
+    line-height: 1.2;
+    cursor: pointer;
+  }
+
+  .creact b { font-weight: 600; font-size: 11.5px; }
+  .creact:hover { border-color: var(--violet); }
+  .creact.on { border-color: var(--violet); background: rgba(167, 139, 250, .16); }
+  .creact:disabled { opacity: .4; cursor: default; }
+
+  .reply-toggle {
+    margin-top: 8px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .reply-toggle:hover { color: var(--violet); }
+
+  .replies { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+
+  .reply {
+    position: relative;
+    padding: 8px 11px;
+    border-radius: 10px;
+    background: rgba(167, 139, 250, .07);
+    border-left: 2px solid rgba(167, 139, 250, .4);
+    font-size: 13px;
+  }
+
+  .reply .who-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+
+  .reply .who-line b { color: var(--violet); font-weight: 600; }
+
+  .reply-box { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .reply-box[hidden] { display: none; }
+
+  .reply-box textarea {
+    width: 100%;
+    padding: 9px 11px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--fg);
+    font: inherit;
+    font-size: 13px;
+    outline: none;
+    resize: none;
+  }
+
+  .reply-box textarea:focus { border-color: var(--violet); }
+  .reply-box .send { font-size: 13px; padding: 8px 16px; }
 
   .empty-note { font-size: 13px; color: var(--muted); padding: 6px 0 14px; }
 
@@ -649,7 +738,7 @@
   </footer>
 </div>
 
-<button class="chat-btn" id="open-chat" type="button" aria-label="Открыть чат">
+<button class="chat-btn" id="open-dm" type="button" aria-label="Написать мне">
   <svg viewBox="0 0 24 24"><path d="M12 3C6.9 3 3 6.6 3 11c0 2.3 1.1 4.4 2.9 5.9-.1 1-.6 2.4-1.6 3.6 1.9-.2 3.4-1 4.4-1.7 1 .3 2.1.4 3.3.4 5.1 0 9-3.6 9-8.2S17.1 3 12 3z"/></svg>
 </button>
 
@@ -693,6 +782,34 @@
         <button class="send" type="button" id="chat-send">Отправить</button>
       </div>
       <p class="hint" data-cloud-hint>Пока сообщения видны только на этом устройстве. Для общего чата нужен сервер.</p>
+    </div>
+  </div>
+</div>
+
+<!-- личные сообщения -->
+<div class="sheet" id="dm-sheet">
+  <div class="sheet-inner">
+    <div class="sheet-head">
+      <b>Написать Хусейну</b>
+      <button class="sheet-close" type="button" id="dm-close" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="sheet-body">
+
+      <div id="dm-form">
+        <div class="compose">
+          <input id="dm-name" type="text" placeholder="Ваше имя" maxlength="24">
+          <textarea id="dm-text" rows="3" placeholder="Сообщение…" maxlength="500"></textarea>
+          <button class="send" type="button" id="dm-send">Отправить</button>
+        </div>
+        <p class="hint" id="dm-note">Сообщение увидит только Хусейн.</p>
+      </div>
+
+      <div id="dm-inbox" hidden>
+        <div class="chat-list" id="dm-list"></div>
+        <p class="hint">Личные сообщения с сайта. Видны только вам.</p>
+      </div>
+
+      <button class="linkbtn" type="button" id="dm-to-chat">Общий чат сайта →</button>
     </div>
   </div>
 </div>
@@ -773,6 +890,9 @@
   var reactions = load("reactions", {});
   var myVotes = load("votes", {});
   var comments = load("comments", {});
+  var replies = load("replies", {});
+  var creacts = load("creacts", {});
+  var cVotes = load("cVotes", {});
   var chat = load("chat", []);
   var myName = load("name", "");
 
@@ -833,9 +953,29 @@
   }
 
   function pullComments(photoId) {
-    return cloudGet("comments/" + photoId).then(function (data) {
-      if (!data) return;
-      comments[photoId] = asArray(data).sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });
+    return Promise.all([
+      cloudGet("comments/" + photoId),
+      cloudGet("replies/" + photoId),
+      cloudGet("creacts/" + photoId)
+    ]).then(function (res) {
+      var data = res[0], rep = res[1], cre = res[2];
+
+      if (data) comments[photoId] = asArray(data).sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });
+
+      replies[photoId] = {};
+      if (rep) {
+        Object.keys(rep).forEach(function (cid) {
+          replies[photoId][cid] = asArray(rep[cid]).sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });
+        });
+      }
+
+      creacts[photoId] = {};
+      if (cre) {
+        Object.keys(cre).forEach(function (cid) {
+          creacts[photoId][cid] = aggregate(cre[cid]);
+        });
+      }
+
       refreshQuick(photoId);
       if (openedPhoto === photoId) renderComments(photoId);
     }).catch(function () {});
@@ -1063,6 +1203,20 @@
     }).join("");
   }
 
+  function renderCReacts(photoId, cid, counts) {
+    var mine = cVotes[photoId + ":" + cid];
+
+    return '<div class="creacts">' + EMOJI.map(function (e) {
+      var n = counts[e.key] || 0;
+      var active = mine === e.key;
+      var locked = !!mine && !active;
+      return '<button class="creact' + (active ? " on" : "") + '" type="button" data-creact="' + e.key +
+             '" data-cid="' + esc(cid) + '"' + (locked ? " disabled" : "") + ">" +
+             '<span aria-hidden="true">' + e.icon + "</span>" +
+             (n ? "<b>" + n + "</b>" : "") + "</button>";
+    }).join("") + "</div>";
+  }
+
   function renderComments(photoId) {
     var list = asArray(comments[photoId]).sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });
 
@@ -1071,13 +1225,40 @@
       return;
     }
 
+    var rmap = replies[photoId] || {};
+    var cmap = creacts[photoId] || {};
+
     photoComments.innerHTML = list.map(function (c) {
-      var del = (isAdmin() && c.key)
-        ? '<button class="del" type="button" data-del-comment="' + esc(c.key) + '" aria-label="Удалить">✕</button>'
+      var cid = c.key || "";
+
+      var del = (isAdmin() && cid)
+        ? '<button class="del" type="button" data-del-comment="' + esc(cid) + '" aria-label="Удалить">✕</button>'
         : "";
+
+      var kids = (rmap[cid] || []).map(function (r) {
+        var rdel = (isAdmin() && r.key)
+          ? '<button class="del" type="button" data-del-reply="' + esc(r.key) + '" data-cid="' + esc(cid) + '" aria-label="Удалить">✕</button>'
+          : "";
+        return '<div class="reply">' + rdel +
+               '<div class="who-line"><b>' + esc(r.name) + "</b><span>" + timeLabel(r.ts) + "</span></div>" +
+               esc(r.text) + "</div>";
+      }).join("");
+
+      var ctrl = cid
+        ? '<div class="creacts-wrap">' + renderCReacts(photoId, cid, cmap[cid] || {}) +
+          '<button class="reply-toggle" type="button" data-cid="' + esc(cid) + '">Ответить</button>' +
+          '<div class="reply-box" data-box="' + esc(cid) + '" hidden>' +
+          '<textarea rows="2" maxlength="300" placeholder="Ваш ответ…"></textarea>' +
+          '<button class="send" type="button" data-reply-send="' + esc(cid) + '">Ответить</button>' +
+          "</div></div>"
+        : "";
+
+      var kidsBox = kids ? '<div class="replies">' + kids + "</div>" : "";
+
       return '<div class="comment">' + del +
              '<div class="who-line"><b>' + esc(c.name) + "</b><span>" + timeLabel(c.ts) + "</span></div>" +
-             "<div>" + esc(c.text) + "</div></div>";
+             "<div>" + esc(c.text) + "</div>" +
+             ctrl + kidsBox + "</div>";
     }).join("");
   }
 
@@ -1192,7 +1373,7 @@
     document.body.style.overflow = "";
   }
 
-  document.getElementById("open-chat").addEventListener("click", openChat);
+  document.getElementById("open-dm").addEventListener("click", openDm);
   document.getElementById("chat-close").addEventListener("click", closeChat);
   chatSheet.addEventListener("click", function (e) { if (e.target === chatSheet) closeChat(); });
 
@@ -1215,6 +1396,101 @@
     }
   });
 
+  /* ── личные сообщения ── */
+  const dmSheet = document.getElementById("dm-sheet");
+  const dmForm = document.getElementById("dm-form");
+  const dmInboxBox = document.getElementById("dm-inbox");
+  const dmList = document.getElementById("dm-list");
+  const dmName = document.getElementById("dm-name");
+  const dmText = document.getElementById("dm-text");
+  const dmNote = document.getElementById("dm-note");
+
+  var inbox = [];
+
+  function renderInbox() {
+    if (!inbox.length) {
+      dmList.innerHTML = '<div class="empty-note">Пока никто не писал.</div>';
+      return;
+    }
+
+    dmList.innerHTML = inbox.map(function (m) {
+      var del = m.key
+        ? '<button class="del" type="button" data-del-inbox="' + esc(m.key) + '" aria-label="Удалить">✕</button>'
+        : "";
+      return '<div class="msg">' + del +
+             '<div class="who-line">' + esc(m.name) + " · " + timeLabel(m.ts) + "</div>" +
+             esc(m.text) + "</div>";
+    }).join("");
+  }
+
+  function authGet(path) {
+    return token().then(function (t) {
+      if (!t) return null;
+      return fetch(cloudUrl(path) + "?auth=" + encodeURIComponent(t), { cache: "no-store" })
+        .then(function (r) { return r.json(); });
+    }).catch(function () { return null; });
+  }
+
+  function pullInbox() {
+    if (!isAdmin()) return Promise.resolve();
+    return authGet('inbox?orderBy=%22%24key%22&limitToLast=100').then(function (data) {
+      inbox = asArray(data).sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });
+      renderInbox();
+    }).catch(function () {});
+  }
+
+  function openDm() {
+    var admin = isAdmin();
+    dmForm.hidden = admin;
+    dmInboxBox.hidden = !admin;
+    dmName.value = myName || "";
+    if (admin) pullInbox();
+    dmSheet.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeDm() {
+    dmSheet.classList.remove("open");
+    document.body.style.overflow = "";
+  }
+
+  document.getElementById("dm-close").addEventListener("click", closeDm);
+  dmSheet.addEventListener("click", function (e) { if (e.target === dmSheet) closeDm(); });
+
+  document.getElementById("dm-to-chat").addEventListener("click", function () {
+    closeDm();
+    openChat();
+  });
+
+  document.getElementById("dm-send").addEventListener("click", function () {
+    var name = pickName(dmName);
+    var text = dmText.value.trim();
+    if (!text) return;
+
+    if (!authState) { myName = name; save("name", myName); }
+
+    dmNote.textContent = "Отправляю…";
+
+    cloudPost("inbox", { name: name, text: text, ts: Date.now() }).then(function (res) {
+      if (res && res.ok) {
+        dmText.value = "";
+        dmNote.textContent = "Отправлено. Хусейн увидит это сообщение.";
+      } else {
+        dmNote.textContent = "Не получилось отправить. Попробуйте ещё раз.";
+      }
+    });
+  });
+
+  dmList.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-del-inbox]");
+    if (!b || !isAdmin()) return;
+    if (!confirm("Удалить сообщение?")) return;
+    cloudDelete("inbox/" + b.getAttribute("data-del-inbox")).then(function (ok) {
+      if (!ok) { alert("Не получилось удалить. Войдите в аккаунт админа заново."); return; }
+      pullInbox();
+    });
+  });
+
   /* ── аккаунт: панель, вход, регистрация ── */
   const authSheet = document.getElementById("auth-sheet");
   const authForm = document.getElementById("auth-form");
@@ -1233,7 +1509,7 @@
 
   function syncNameFields() {
     var logged = !!(authState && authState.email);
-    [photoName, chatName].forEach(function (el) {
+    [photoName, chatName, dmName].forEach(function (el) {
       if (!el) return;
       el.style.display = logged ? "none" : "";
       if (!logged) el.value = myName || "";
@@ -1349,14 +1625,89 @@
   });
 
   photoComments.addEventListener("click", function (e) {
-    var b = e.target.closest("[data-del-comment]");
-    if (!b || !isAdmin() || !openedPhoto) return;
-    if (!confirm("Удалить комментарий?")) return;
-    cloudDelete("comments/" + openedPhoto + "/" + b.getAttribute("data-del-comment"))
-      .then(function (ok) {
+    if (!openedPhoto) return;
+    var photo = openedPhoto;
+
+    var del = e.target.closest("[data-del-comment]");
+    if (del) {
+      if (!isAdmin()) return;
+      if (!confirm("Удалить комментарий?")) return;
+      cloudDelete("comments/" + photo + "/" + del.getAttribute("data-del-comment")).then(function (ok) {
         if (!ok) { alert("Не получилось удалить. Войдите в аккаунт админа заново."); return; }
-        pullComments(openedPhoto);
+        pullComments(photo);
       });
+      return;
+    }
+
+    var rdel = e.target.closest("[data-del-reply]");
+    if (rdel) {
+      if (!isAdmin()) return;
+      if (!confirm("Удалить ответ?")) return;
+      cloudDelete("replies/" + photo + "/" + rdel.getAttribute("data-cid") + "/" + rdel.getAttribute("data-del-reply"))
+        .then(function (ok) {
+          if (!ok) { alert("Не получилось удалить. Войдите в аккаунт админа заново."); return; }
+          pullComments(photo);
+        });
+      return;
+    }
+
+    var toggle = e.target.closest(".reply-toggle");
+    if (toggle) {
+      var box = photoComments.querySelector('[data-box="' + toggle.getAttribute("data-cid") + '"]');
+      if (!box) return;
+      box.hidden = !box.hidden;
+      if (!box.hidden) {
+        var ta = box.querySelector("textarea");
+        if (ta) ta.focus();
+      }
+      return;
+    }
+
+    var send = e.target.closest("[data-reply-send]");
+    if (send) {
+      var cid = send.getAttribute("data-reply-send");
+      var rbox = photoComments.querySelector('[data-box="' + cid + '"]');
+      if (!rbox) return;
+
+      var rta = rbox.querySelector("textarea");
+      var text = (rta.value || "").trim();
+      if (!text) return;
+
+      var name = pickName(photoName);
+      if (!authState) { myName = name; save("name", myName); }
+
+      if (!replies[photo]) replies[photo] = {};
+      if (!replies[photo][cid]) replies[photo][cid] = [];
+      replies[photo][cid].push({ name: name, text: text, ts: Date.now() });
+
+      rta.value = "";
+      renderComments(photo);
+
+      if (DB) {
+        cloudPost("replies/" + photo + "/" + cid, { name: name, text: text, ts: Date.now() })
+          .then(function () { pullComments(photo); });
+      }
+      return;
+    }
+
+    var cre = e.target.closest(".creact");
+    if (cre) {
+      var ccid = cre.getAttribute("data-cid");
+      var key = cre.getAttribute("data-creact");
+      var vkey = photo + ":" + ccid;
+      if (cVotes[vkey]) return;
+
+      if (!creacts[photo]) creacts[photo] = {};
+      if (!creacts[photo][ccid]) creacts[photo][ccid] = { heart: 0, laugh: 0, fire: 0 };
+      creacts[photo][ccid][key] = (creacts[photo][ccid][key] || 0) + 1;
+      cVotes[vkey] = key;
+
+      save("cVotes", cVotes);
+      save("creacts", creacts);
+      renderComments(photo);
+
+      if (DB) cloudPost("creacts/" + photo + "/" + ccid, { type: key, ts: Date.now() });
+    }
   });
 
   setAuthMode("login");
@@ -1378,10 +1729,11 @@
       pullComments(openedPhoto);
     }
     if (chatSheet.classList.contains("open")) pullChat();
+    if (dmSheet.classList.contains("open") && isAdmin()) pullInbox();
   }, 6000);
 
   addEventListener("keydown", function (e) {
-    if (e.key === "Escape") { closePhoto(); closeChat(); }
+    if (e.key === "Escape") { closePhoto(); closeChat(); closeDm(); closeAuth(); }
     if (e.key === "ArrowLeft") show(current - 1);
     if (e.key === "ArrowRight") show(current + 1);
   });
