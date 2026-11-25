@@ -997,7 +997,8 @@
     }).catch(function () { return null; });
   }
 
-  /* отправка от имени вошедшего: с токеном и меткой создателя */
+  /* отправка от имени вошедшего: с токеном и меткой создателя.
+     Если сервер не подтвердит права — отправляем как обычный посетитель. */
   function sendCloud(path, data) {
     if (!DB) return Promise.resolve(null);
 
@@ -1012,8 +1013,38 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
-      }).catch(function () { return null; });
+      }).then(function (res) {
+        if (res.ok) return { ok: true, badge: !!body.owner };
+
+        return res.text().then(function (txt) {
+          var reason = txt.indexOf("Permission denied") >= 0 ? "denied" : (txt.indexOf("token") >= 0 ? "token" : "other");
+
+          if (!body.owner) return { ok: false, badge: false, reason: reason, status: res.status };
+
+          var plain = {};
+          Object.keys(data).forEach(function (k) { plain[k] = data[k]; });
+
+          return fetch(cloudUrl(path), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(plain)
+          }).then(function (r2) {
+            return { ok: r2.ok, badge: false, reason: reason, status: res.status };
+          }).catch(function () { return { ok: false, badge: false, reason: "network" }; });
+        });
+      }).catch(function () { return { ok: false, badge: false, reason: "network" }; });
     });
+  }
+
+  function sendProblem(res) {
+    if (!res || !res.ok) {
+      return "Не получилось отправить" + (res && res.status ? " (код " + res.status + ")" : "") + ". Попробуйте ещё раз.";
+    }
+    if (res.badge === false && isAdmin()) {
+      return "Отправлено, но без значка создателя: сервер не подтвердил права админа. " +
+             "Проверьте правила — почта в них должна точно совпадать с админской.";
+    }
+    return "";
   }
 
   function asArray(obj) {
@@ -1479,9 +1510,10 @@
     if (DB) {
       sendCloud("comments/" + openedPhoto, { name: name, text: text, ts: Date.now() })
         .then(function (res) {
-          if (res && res.ok) { pullComments(openedPhoto); return; }
-          photoText.value = text;
-          alert("Не получилось отправить комментарий. Попробуйте ещё раз.");
+          if (!res || !res.ok) photoText.value = text;
+          var note = sendProblem(res);
+          if (note) alert(note);
+          pullComments(openedPhoto);
         });
     }
   });
@@ -1544,9 +1576,10 @@
 
     if (DB) {
       sendCloud("chat", { name: name, text: text, ts: Date.now() }).then(function (res) {
-        if (res && res.ok) { pullChat(); return; }
-        chatText.value = text;
-        alert("Не получилось отправить сообщение. Попробуйте ещё раз.");
+        if (!res || !res.ok) chatText.value = text;
+        var note = sendProblem(res);
+        if (note) alert(note);
+        pullChat();
       });
     }
   });
@@ -1846,8 +1879,9 @@
       if (DB) {
         sendCloud("replies/" + photo + "/" + cid, { name: name, text: text, ts: Date.now() })
           .then(function (res) {
-            if (res && res.ok) { pullComments(photo); return; }
-            alert("Не получилось отправить ответ. Попробуйте ещё раз.");
+            var note = sendProblem(res);
+            if (note) alert(note);
+            pullComments(photo);
           });
       }
       return;
