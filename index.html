@@ -485,6 +485,84 @@
 
   .msg .who-line { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
 
+  /* ── аккаунт ───────────────────────────── */
+  .auth-btn {
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(244, 241, 251, .3);
+    background: rgba(13, 8, 23, .45);
+    color: inherit;
+    font: inherit;
+    font-size: 11px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+  }
+
+  .auth-btn.on { border-color: var(--violet); color: var(--violet); }
+  .auth-btn:hover { border-color: var(--violet); }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+
+  .tab {
+    flex: 1;
+    padding: 9px 0;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--muted);
+    font-size: 13.5px;
+    cursor: pointer;
+  }
+
+  .tab.on {
+    border-color: var(--violet);
+    color: var(--fg);
+    background: rgba(167, 139, 250, .14);
+  }
+
+  .err { font-size: 12.5px; color: #f87272; margin: 10px 0 0; min-height: 1em; }
+
+  .profile { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+
+  .profile-ava {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: rgba(124, 58, 237, .3);
+    border: 1px solid rgba(167, 139, 250, .5);
+    font-size: 18px;
+    flex: none;
+  }
+
+  .profile b { display: block; font-size: 15px; }
+  .profile span { font-size: 12.5px; color: var(--muted); word-break: break-all; }
+
+  .ghost { background: transparent; border: 1px solid var(--line); color: var(--fg); }
+
+  .comment, .msg { position: relative; }
+
+  .del {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(244, 241, 251, .2);
+    background: rgba(0, 0, 0, .35);
+    color: rgba(244, 241, 251, .8);
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .del:hover { border-color: #f87272; color: #f87272; }
+
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
     html { scroll-behavior: auto; }
@@ -519,8 +597,8 @@
   </div>
 
   <div class="cover-top">
-    <span>husien.jo3.org</span>
-    <span>альбом</span>
+    <span>hussiensosal.jo3.org</span>
+    <button class="auth-btn" id="auth-open" type="button">Войти</button>
   </div>
 
   <div class="cover-bottom">
@@ -594,7 +672,7 @@
         <textarea id="photo-text" rows="2" placeholder="Написать комментарий…" maxlength="300"></textarea>
         <button class="send" type="button" id="photo-send">Отправить</button>
       </div>
-      <p class="hint">Пока сохраняется только на этом устройстве.</p>
+      <p class="hint" data-cloud-hint>Пока сохраняется только на этом устройстве.</p>
     </div>
   </div>
 </div>
@@ -614,7 +692,49 @@
         <textarea id="chat-text" rows="2" placeholder="Сообщение…" maxlength="300"></textarea>
         <button class="send" type="button" id="chat-send">Отправить</button>
       </div>
-      <p class="hint">Пока сообщения видны только на этом устройстве. Для общего чата нужен сервер.</p>
+      <p class="hint" data-cloud-hint>Пока сообщения видны только на этом устройстве. Для общего чата нужен сервер.</p>
+    </div>
+  </div>
+</div>
+
+<!-- аккаунт -->
+<div class="sheet" id="auth-sheet">
+  <div class="sheet-inner">
+    <div class="sheet-head">
+      <b>Аккаунт</b>
+      <button class="sheet-close" type="button" id="auth-close" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="sheet-body">
+
+      <div id="auth-form">
+        <div class="tabs">
+          <button class="tab on" type="button" data-mode="login">Вход</button>
+          <button class="tab" type="button" data-mode="signup">Регистрация</button>
+        </div>
+
+        <div class="compose">
+          <input id="auth-name" type="text" placeholder="Ваше имя" maxlength="24" hidden>
+          <input id="auth-email" type="email" placeholder="Почта" autocomplete="email" inputmode="email">
+          <input id="auth-pass" type="password" placeholder="Пароль" autocomplete="current-password">
+          <button class="send" type="button" id="auth-submit">Войти</button>
+        </div>
+
+        <p class="err" id="auth-err"></p>
+        <p class="hint" id="auth-note">Аккаунт нужен, чтобы подписываться своим именем. Читать и писать можно и без него.</p>
+      </div>
+
+      <div id="auth-profile" hidden>
+        <div class="profile">
+          <div class="profile-ava" id="profile-ava">?</div>
+          <div>
+            <b id="profile-name"></b>
+            <span id="profile-mail"></span>
+          </div>
+        </div>
+        <p class="hint" id="profile-role"></p>
+        <button class="send ghost" type="button" id="auth-logout">Выйти</button>
+      </div>
+
     </div>
   </div>
 </div>
@@ -665,7 +785,7 @@
 
   function cloudGet(path) {
     if (!DB) return Promise.resolve(null);
-    return fetch(cloudUrl(path)).then(function (r) { return r.json(); });
+    return fetch(cloudUrl(path), { cache: "no-store" }).then(function (r) { return r.json(); });
   }
 
   function cloudPut(path, data) {
@@ -748,6 +868,109 @@
       refreshAllQuick();
       if (openedPhoto) renderComments(openedPhoto);
     }).catch(function () {});
+  }
+
+  /* ── аккаунты (Firebase Authentication) ──
+     API_KEY — ключ веб-приложения из настроек проекта Firebase.
+     ADMIN_EMAIL — почта админа: с неё доступно удаление. */
+  const API_KEY = "AIzaSyBblqcHOe4Gl7uwupT53FhIa-PXzIbQ7V0";
+  const ADMIN_EMAIL = "ilahrenov251@gmail.com";
+
+  var authState = load("auth", null);
+  var authMode = "login";
+
+  function isAdmin() {
+    return !!(authState && authState.email && ADMIN_EMAIL &&
+      authState.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+  }
+
+  function token() {
+    if (!authState || !authState.idToken) return Promise.resolve(null);
+    if (authState.exp && Date.now() < authState.exp - 60000) return Promise.resolve(authState.idToken);
+    if (!authState.refreshToken || !API_KEY) return Promise.resolve(null);
+
+    return fetch("https://securetoken.googleapis.com/v1/token?key=" + API_KEY, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "grant_type=refresh_token&refresh_token=" + encodeURIComponent(authState.refreshToken)
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d.id_token) return null;
+      authState.idToken = d.id_token;
+      authState.refreshToken = d.refresh_token || authState.refreshToken;
+      authState.exp = Date.now() + (parseInt(d.expires_in, 10) || 3600) * 1000;
+      save("auth", authState);
+      return authState.idToken;
+    }).catch(function () { return null; });
+  }
+
+  function cloudDelete(path) {
+    if (!DB) return Promise.resolve(false);
+    return token().then(function (t) {
+      if (!t) return false;
+      return fetch(cloudUrl(path) + "?auth=" + encodeURIComponent(t), { method: "DELETE" })
+        .then(function (r) { return r.ok; });
+    }).catch(function () { return false; });
+  }
+
+  function authRequest(url, body) {
+    return fetch(url + "?key=" + API_KEY, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    }).then(function (r) { return r.json(); });
+  }
+
+  var AUTH_ERRORS = {
+    EMAIL_EXISTS: "Такая почта уже зарегистрирована",
+    EMAIL_NOT_FOUND: "Почта не найдена",
+    INVALID_PASSWORD: "Неверный пароль",
+    INVALID_LOGIN_CREDENTIALS: "Неверная почта или пароль",
+    INVALID_EMAIL: "Проверьте адрес почты",
+    MISSING_PASSWORD: "Введите пароль",
+    WEAK_PASSWORD: "Пароль должен быть от 6 символов",
+    TOO_MANY_ATTEMPTS_TRY_LATER: "Слишком много попыток. Попробуйте позже",
+    USER_DISABLED: "Аккаунт отключён",
+    OPERATION_NOT_ALLOWED: "Вход по почте не включён в Firebase"
+  };
+
+  function authErrorText(code) {
+    return AUTH_ERRORS[code] || ("Ошибка: " + code);
+  }
+
+  function startSession(d, name) {
+    authState = {
+      email: d.email || "",
+      name: name || d.displayName || "",
+      uid: d.localId || "",
+      idToken: d.idToken,
+      refreshToken: d.refreshToken,
+      exp: Date.now() + (parseInt(d.expiresIn, 10) || 3600) * 1000
+    };
+    save("auth", authState);
+    if (authState.name) { myName = authState.name; save("name", myName); }
+  }
+
+  function doLogin(email, pass) {
+    return authRequest("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword", {
+      email: email, password: pass, returnSecureToken: true
+    }).then(function (d) {
+      if (d.error) throw new Error(authErrorText(d.error.message));
+      startSession(d);
+    });
+  }
+
+  function doSignup(email, pass, name) {
+    return authRequest("https://identitytoolkit.googleapis.com/v1/accounts:signUp", {
+      email: email, password: pass, returnSecureToken: true
+    }).then(function (d) {
+      if (d.error) throw new Error(authErrorText(d.error.message));
+      startSession(d, name);
+      return authRequest("https://identitytoolkit.googleapis.com/v1/accounts:update", {
+        idToken: d.idToken, displayName: name, returnSecureToken: true
+      }).then(function (u) {
+        if (u && u.idToken) { authState.idToken = u.idToken; save("auth", authState); }
+      }).catch(function () {});
+    });
   }
 
   /* ── листалка ── */
@@ -849,7 +1072,10 @@
     }
 
     photoComments.innerHTML = list.map(function (c) {
-      return '<div class="comment">' +
+      var del = (isAdmin() && c.key)
+        ? '<button class="del" type="button" data-del-comment="' + esc(c.key) + '" aria-label="Удалить">✕</button>'
+        : "";
+      return '<div class="comment">' + del +
              '<div class="who-line"><b>' + esc(c.name) + "</b><span>" + timeLabel(c.ts) + "</span></div>" +
              "<div>" + esc(c.text) + "</div></div>";
     }).join("");
@@ -908,12 +1134,11 @@
   document.getElementById("photo-send").addEventListener("click", function () {
     if (!openedPhoto) return;
 
-    var name = photoName.value.trim() || "Гость";
+    var name = pickName(photoName);
     var text = photoText.value.trim();
     if (!text) return;
 
-    myName = name;
-    save("name", myName);
+    if (!authState) { myName = name; save("name", myName); }
 
     var list = asArray(comments[openedPhoto]);
     comments[openedPhoto] = list;
@@ -942,8 +1167,11 @@
       return;
     }
 
-    chatList.innerHTML = chat.map(function (m, i) {
-      return '<div class="msg' + (m.mine ? " mine" : "") + '">' +
+    chatList.innerHTML = chat.map(function (m) {
+      var del = (isAdmin() && m.key)
+        ? '<button class="del" type="button" data-del-chat="' + esc(m.key) + '" aria-label="Удалить">✕</button>'
+        : "";
+      return '<div class="msg' + (m.mine ? " mine" : "") + '">' + del +
              '<div class="who-line">' + esc(m.name) + " · " + timeLabel(m.ts) + "</div>" +
              esc(m.text) + "</div>";
     }).join("");
@@ -969,12 +1197,11 @@
   chatSheet.addEventListener("click", function (e) { if (e.target === chatSheet) closeChat(); });
 
   document.getElementById("chat-send").addEventListener("click", function () {
-    var name = chatName.value.trim() || "Гость";
+    var name = pickName(chatName);
     var text = chatText.value.trim();
     if (!text) return;
 
-    myName = name;
-    save("name", myName);
+    if (!authState) { myName = name; save("name", myName); }
 
     chat.push({ name: name, text: text, ts: Date.now(), mine: true });
     save("chat", chat);
@@ -988,11 +1215,158 @@
     }
   });
 
+  /* ── аккаунт: панель, вход, регистрация ── */
+  const authSheet = document.getElementById("auth-sheet");
+  const authForm = document.getElementById("auth-form");
+  const authProfile = document.getElementById("auth-profile");
+  const authName = document.getElementById("auth-name");
+  const authEmail = document.getElementById("auth-email");
+  const authPass = document.getElementById("auth-pass");
+  const authSubmit = document.getElementById("auth-submit");
+  const authErr = document.getElementById("auth-err");
+  const authNote = document.getElementById("auth-note");
+
+  function pickName(input) {
+    if (authState && authState.name) return authState.name;
+    return (input && input.value || "").trim() || "Гость";
+  }
+
+  function syncNameFields() {
+    var logged = !!(authState && authState.email);
+    [photoName, chatName].forEach(function (el) {
+      if (!el) return;
+      el.style.display = logged ? "none" : "";
+      if (!logged) el.value = myName || "";
+    });
+  }
+
+  function renderAuth() {
+    var btn = document.getElementById("auth-open");
+    var logged = !!(authState && authState.email);
+
+    if (logged) {
+      btn.textContent = (authState.name || authState.email).slice(0, 1).toUpperCase();
+      btn.classList.add("on");
+      authForm.hidden = true;
+      authProfile.hidden = false;
+      document.getElementById("profile-ava").textContent = (authState.name || authState.email).slice(0, 1).toUpperCase();
+      document.getElementById("profile-name").textContent = authState.name || "Участник";
+      document.getElementById("profile-mail").textContent = authState.email;
+      document.getElementById("profile-role").textContent = isAdmin()
+        ? "Вы админ: можете удалять сообщения и комментарии."
+        : "Обычный аккаунт: сообщения подписываются вашим именем.";
+    } else {
+      btn.textContent = "Войти";
+      btn.classList.remove("on");
+      authForm.hidden = false;
+      authProfile.hidden = true;
+    }
+
+    authErr.textContent = "";
+    syncNameFields();
+  }
+
+  function setAuthMode(mode) {
+    authMode = mode;
+    document.querySelectorAll(".tab").forEach(function (t) {
+      t.classList.toggle("on", t.getAttribute("data-mode") === mode);
+    });
+    authName.hidden = mode !== "signup";
+    authSubmit.textContent = mode === "signup" ? "Создать аккаунт" : "Войти";
+    authPass.setAttribute("autocomplete", mode === "signup" ? "new-password" : "current-password");
+    authErr.textContent = "";
+  }
+
+  function openAuth() {
+    renderAuth();
+    setAuthMode(authMode);
+    authSheet.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeAuth() {
+    authSheet.classList.remove("open");
+    document.body.style.overflow = "";
+  }
+
+  document.getElementById("auth-open").addEventListener("click", openAuth);
+  document.getElementById("auth-close").addEventListener("click", closeAuth);
+  authSheet.addEventListener("click", function (e) { if (e.target === authSheet) closeAuth(); });
+
+  document.querySelectorAll(".tab").forEach(function (t) {
+    t.addEventListener("click", function () { setAuthMode(t.getAttribute("data-mode")); });
+  });
+
+  authSubmit.addEventListener("click", function () {
+    var email = authEmail.value.trim();
+    var pass = authPass.value;
+
+    if (!API_KEY) {
+      authErr.textContent = "Аккаунты ещё не подключены: нужен ключ Firebase.";
+      return;
+    }
+    if (!email || email.indexOf("@") < 0) { authErr.textContent = "Введите почту"; return; }
+    if (!pass) { authErr.textContent = "Введите пароль"; return; }
+    if (authMode === "signup" && !authName.value.trim()) { authErr.textContent = "Введите имя"; return; }
+
+    authSubmit.disabled = true;
+    authErr.textContent = "Подождите…";
+
+    var job = authMode === "signup"
+      ? doSignup(email, pass, authName.value.trim())
+      : doLogin(email, pass);
+
+    job.then(function () {
+      authPass.value = "";
+      renderAuth();
+      if (chatSheet.classList.contains("open")) pullChat();
+      if (openedPhoto) renderComments(openedPhoto);
+      authErr.textContent = isAdmin() ? "Вы вошли как админ." : "Готово, вы вошли.";
+    }).catch(function (e) {
+      authErr.textContent = e && e.message ? e.message : "Не получилось. Попробуйте ещё раз.";
+    }).then(function () {
+      authSubmit.disabled = false;
+    });
+  });
+
+  document.getElementById("auth-logout").addEventListener("click", function () {
+    authState = null;
+    try { localStorage.removeItem("album:auth"); } catch (e) {}
+    renderAuth();
+    if (chatSheet.classList.contains("open")) renderChat();
+    if (openedPhoto) renderComments(openedPhoto);
+  });
+
+  /* удаление для админа */
+  chatList.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-del-chat]");
+    if (!b || !isAdmin()) return;
+    if (!confirm("Удалить сообщение?")) return;
+    cloudDelete("chat/" + b.getAttribute("data-del-chat")).then(function (ok) {
+      if (!ok) { alert("Не получилось удалить. Войдите в аккаунт админа заново."); return; }
+      pullChat();
+    });
+  });
+
+  photoComments.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-del-comment]");
+    if (!b || !isAdmin() || !openedPhoto) return;
+    if (!confirm("Удалить комментарий?")) return;
+    cloudDelete("comments/" + openedPhoto + "/" + b.getAttribute("data-del-comment"))
+      .then(function (ok) {
+        if (!ok) { alert("Не получилось удалить. Войдите в аккаунт админа заново."); return; }
+        pullComments(openedPhoto);
+      });
+  });
+
+  setAuthMode("login");
+  renderAuth();
+
   /* ── подтягиваем данные из облака ── */
   hydrate();
 
   if (DB) {
-    document.querySelectorAll(".hint").forEach(function (h) {
+    document.querySelectorAll("[data-cloud-hint]").forEach(function (h) {
       h.textContent = "Сохраняется на сервере: видно всем посетителям сайта.";
     });
   }
