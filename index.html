@@ -151,6 +151,24 @@
   .who b { display: block; font-size: 15px; letter-spacing: .02em; }
   .who span { font-size: 12.5px; color: rgba(244, 241, 251, .68); }
 
+  /* ── переливающийся ник ── */
+  .shine,
+  .who b.shine,
+  .who-line b.shine {
+    background: linear-gradient(90deg, #a78bfa, #22d3ee, #f472b6, #facc15, #a78bfa);
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    animation: shineMove 7s linear infinite;
+  }
+
+  @keyframes shineMove {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 220% 50%; }
+  }
+
   /* ── переключатель страниц ─────────────── */
   .pager { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 
@@ -652,6 +670,21 @@
 
   .del:hover { border-color: #f87272; color: #f87272; }
 
+  .nick {
+    background-image: linear-gradient(90deg, #a78bfa, #38bdf8, #f472b6, #fbbf24, #a78bfa);
+    background-size: 400% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: nickFlow 7s linear infinite;
+  }
+
+  @keyframes nickFlow {
+    from { background-position: 0% 50%; }
+    to { background-position: 100% 50%; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
     html { scroll-behavior: auto; }
@@ -844,7 +877,7 @@
         <div class="profile">
           <div class="profile-ava" id="profile-ava">?</div>
           <div>
-            <b id="profile-name"></b>
+            <b id="profile-name" class="shine"></b>
             <span id="profile-mail"></span>
           </div>
         </div>
@@ -1156,6 +1189,13 @@
     });
   }
 
+  /* подсветка имени владельца профиля */
+  function nameHtml(n) {
+    var s = esc(n);
+    var mine = authState && authState.name && String(n || "").trim().toLowerCase() === authState.name.trim().toLowerCase();
+    return mine ? '<span class="shine">' + s + "</span>" : s;
+  }
+
   function timeLabel(ts) {
     var d = new Date(ts);
     return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) + ", " +
@@ -1258,7 +1298,7 @@
           ? '<button class="del" type="button" data-del-reply="' + esc(r.key) + '" data-cid="' + esc(cid) + '" aria-label="Удалить">✕</button>'
           : "";
         return '<div class="reply">' + rdel +
-               '<div class="who-line"><b>' + esc(r.name) + "</b><span>" + timeLabel(r.ts) + "</span></div>" +
+               '<div class="who-line"><b>' + nameHtml(r.name) + "</b><span>" + timeLabel(r.ts) + "</span></div>" +
                esc(r.text) + "</div>";
       }).join("");
 
@@ -1274,7 +1314,7 @@
       var kidsBox = kids ? '<div class="replies">' + kids + "</div>" : "";
 
       return '<div class="comment">' + del +
-             '<div class="who-line"><b>' + esc(c.name) + "</b><span>" + timeLabel(c.ts) + "</span></div>" +
+             '<div class="who-line"><b>' + nameHtml(c.name) + "</b><span>" + timeLabel(c.ts) + "</span></div>" +
              "<div>" + esc(c.text) + "</div>" +
              ctrl + kidsBox + "</div>";
     }).join("");
@@ -1397,7 +1437,7 @@
         ? '<button class="del" type="button" data-del-chat="' + esc(m.key) + '" aria-label="Удалить">✕</button>'
         : "";
       return '<div class="msg' + (m.mine ? " mine" : "") + '">' + del +
-             '<div class="who-line">' + esc(m.name) + " · " + timeLabel(m.ts) + "</div>" +
+             '<div class="who-line">' + nameHtml(m.name) + " · " + timeLabel(m.ts) + "</div>" +
              esc(m.text) + "</div>";
     }).join("");
 
@@ -1462,7 +1502,7 @@
         ? '<button class="del" type="button" data-del-inbox="' + esc(m.key) + '" aria-label="Удалить">✕</button>'
         : "";
       return '<div class="msg">' + del +
-             '<div class="who-line">' + esc(m.name) + " · " + timeLabel(m.ts) + "</div>" +
+             '<div class="who-line">' + nameHtml(m.name) + " · " + timeLabel(m.ts) + "</div>" +
              esc(m.text) + "</div>";
     }).join("");
   }
