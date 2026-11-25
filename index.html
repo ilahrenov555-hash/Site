@@ -169,6 +169,40 @@
     100% { background-position: 220% 50%; }
   }
 
+  .tick {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    margin-left: 5px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a78bfa, #22d3ee);
+    color: #0d0817;
+    -webkit-text-fill-color: #0d0817;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    vertical-align: middle;
+  }
+
+  .role {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    border: 1px solid rgba(167, 139, 250, .45);
+    color: var(--violet);
+    -webkit-text-fill-color: var(--violet);
+    font-size: 9.5px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    vertical-align: middle;
+  }
+
+  .badge-row { display: flex; align-items: center; gap: 4px; margin: 2px 0 3px; }
+  .badge-row[hidden] { display: none; }
+
   /* ── переключатель страниц ─────────────── */
   .pager { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 
@@ -877,7 +911,11 @@
         <div class="profile">
           <div class="profile-ava" id="profile-ava">?</div>
           <div>
-            <b id="profile-name" class="shine"></b>
+            <b id="profile-name"></b>
+            <div class="badge-row" id="profile-badge" hidden>
+              <span class="tick" title="Создатель">✓</span>
+              <span class="role">создатель</span>
+            </div>
             <span id="profile-mail"></span>
           </div>
         </div>
@@ -1189,11 +1227,14 @@
     });
   }
 
-  /* подсветка имени владельца профиля */
-  function nameHtml(n) {
+  /* значок создателя: только у сообщений с админского аккаунта */
+  function nameHtml(rec) {
+    var n = rec && typeof rec === "object" ? rec.name : rec;
     var s = esc(n);
-    var mine = authState && authState.name && String(n || "").trim().toLowerCase() === authState.name.trim().toLowerCase();
-    return mine ? '<span class="shine">' + s + "</span>" : s;
+    if (!(rec && typeof rec === "object" && rec.owner)) return s;
+    return '<span class="shine">' + s + "</span>" +
+           '<span class="tick" title="Создатель" aria-label="Создатель">✓</span>' +
+           '<span class="role">создатель</span>';
   }
 
   function timeLabel(ts) {
@@ -1298,7 +1339,7 @@
           ? '<button class="del" type="button" data-del-reply="' + esc(r.key) + '" data-cid="' + esc(cid) + '" aria-label="Удалить">✕</button>'
           : "";
         return '<div class="reply">' + rdel +
-               '<div class="who-line"><b>' + nameHtml(r.name) + "</b><span>" + timeLabel(r.ts) + "</span></div>" +
+               '<div class="who-line"><b>' + nameHtml(r) + "</b><span>" + timeLabel(r.ts) + "</span></div>" +
                esc(r.text) + "</div>";
       }).join("");
 
@@ -1314,7 +1355,7 @@
       var kidsBox = kids ? '<div class="replies">' + kids + "</div>" : "";
 
       return '<div class="comment">' + del +
-             '<div class="who-line"><b>' + nameHtml(c.name) + "</b><span>" + timeLabel(c.ts) + "</span></div>" +
+             '<div class="who-line"><b>' + nameHtml(c) + "</b><span>" + timeLabel(c.ts) + "</span></div>" +
              "<div>" + esc(c.text) + "</div>" +
              ctrl + kidsBox + "</div>";
     }).join("");
@@ -1407,7 +1448,9 @@
 
     var list = asArray(comments[openedPhoto]);
     comments[openedPhoto] = list;
-    list.push({ name: name, text: text, ts: Date.now() });
+    var entry = { name: name, text: text, ts: Date.now() };
+    if (isAdmin()) entry.owner = 1;
+    list.push(entry);
     save("comments", comments);
 
     photoText.value = "";
@@ -1415,7 +1458,9 @@
     refreshQuick(openedPhoto);
 
     if (DB) {
-      cloudPost("comments/" + openedPhoto, { name: name, text: text, ts: Date.now() })
+      var payload = { name: name, text: text, ts: Date.now() };
+      if (isAdmin()) payload.owner = 1;
+      cloudPost("comments/" + openedPhoto, payload)
         .then(function () { pullComments(openedPhoto); });
     }
   });
@@ -1437,7 +1482,7 @@
         ? '<button class="del" type="button" data-del-chat="' + esc(m.key) + '" aria-label="Удалить">✕</button>'
         : "";
       return '<div class="msg' + (m.mine ? " mine" : "") + '">' + del +
-             '<div class="who-line">' + nameHtml(m.name) + " · " + timeLabel(m.ts) + "</div>" +
+             '<div class="who-line">' + nameHtml(m) + " · " + timeLabel(m.ts) + "</div>" +
              esc(m.text) + "</div>";
     }).join("");
 
@@ -1468,15 +1513,18 @@
 
     if (!authState) { myName = name; save("name", myName); }
 
-    chat.push({ name: name, text: text, ts: Date.now(), mine: true });
+    var entry = { name: name, text: text, ts: Date.now(), mine: true };
+    if (isAdmin()) entry.owner = 1;
+    chat.push(entry);
     save("chat", chat);
 
     chatText.value = "";
     renderChat();
 
     if (DB) {
-      cloudPost("chat", { name: name, text: text, ts: Date.now() })
-        .then(function () { pullChat(); });
+      var payload = { name: name, text: text, ts: Date.now() };
+      if (isAdmin()) payload.owner = 1;
+      cloudPost("chat", payload).then(function () { pullChat(); });
     }
   });
 
@@ -1502,7 +1550,7 @@
         ? '<button class="del" type="button" data-del-inbox="' + esc(m.key) + '" aria-label="Удалить">✕</button>'
         : "";
       return '<div class="msg">' + del +
-             '<div class="who-line">' + nameHtml(m.name) + " · " + timeLabel(m.ts) + "</div>" +
+             '<div class="who-line">' + nameHtml(m) + " · " + timeLabel(m.ts) + "</div>" +
              esc(m.text) + "</div>";
     }).join("");
   }
@@ -1610,7 +1658,10 @@
       authForm.hidden = true;
       authProfile.hidden = false;
       document.getElementById("profile-ava").textContent = (authState.name || authState.email).slice(0, 1).toUpperCase();
-      document.getElementById("profile-name").textContent = authState.name || "Участник";
+      var pname = document.getElementById("profile-name");
+      pname.textContent = authState.name || "Участник";
+      pname.className = isAdmin() ? "shine" : "";
+      document.getElementById("profile-badge").hidden = !isAdmin();
       document.getElementById("profile-mail").textContent = authState.email;
       document.getElementById("profile-role").textContent = isAdmin()
         ? "Вы админ: можете удалять сообщения и комментарии."
@@ -1762,13 +1813,17 @@
 
       if (!replies[photo]) replies[photo] = {};
       if (!replies[photo][cid]) replies[photo][cid] = [];
-      replies[photo][cid].push({ name: name, text: text, ts: Date.now() });
+      var rEntry = { name: name, text: text, ts: Date.now() };
+      if (isAdmin()) rEntry.owner = 1;
+      replies[photo][cid].push(rEntry);
 
       rta.value = "";
       renderComments(photo);
 
       if (DB) {
-        cloudPost("replies/" + photo + "/" + cid, { name: name, text: text, ts: Date.now() })
+        var rPayload = { name: name, text: text, ts: Date.now() };
+        if (isAdmin()) rPayload.owner = 1;
+        cloudPost("replies/" + photo + "/" + cid, rPayload)
           .then(function () { pullComments(photo); });
       }
       return;
