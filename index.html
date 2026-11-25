@@ -997,6 +997,25 @@
     }).catch(function () { return null; });
   }
 
+  /* отправка от имени вошедшего: с токеном и меткой создателя */
+  function sendCloud(path, data) {
+    if (!DB) return Promise.resolve(null);
+
+    return token().then(function (t) {
+      var body = {};
+      Object.keys(data).forEach(function (k) { body[k] = data[k]; });
+      if (t && isAdmin()) body.owner = 1;
+
+      var url = cloudUrl(path) + (t ? "?auth=" + encodeURIComponent(t) : "");
+
+      return fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      }).catch(function () { return null; });
+    });
+  }
+
   function asArray(obj) {
     if (!obj) return [];
     if (Array.isArray(obj)) return obj;
@@ -1458,10 +1477,12 @@
     refreshQuick(openedPhoto);
 
     if (DB) {
-      var payload = { name: name, text: text, ts: Date.now() };
-      if (isAdmin()) payload.owner = 1;
-      cloudPost("comments/" + openedPhoto, payload)
-        .then(function () { pullComments(openedPhoto); });
+      sendCloud("comments/" + openedPhoto, { name: name, text: text, ts: Date.now() })
+        .then(function (res) {
+          if (res && res.ok) { pullComments(openedPhoto); return; }
+          photoText.value = text;
+          alert("Не получилось отправить комментарий. Попробуйте ещё раз.");
+        });
     }
   });
 
@@ -1522,9 +1543,11 @@
     renderChat();
 
     if (DB) {
-      var payload = { name: name, text: text, ts: Date.now() };
-      if (isAdmin()) payload.owner = 1;
-      cloudPost("chat", payload).then(function () { pullChat(); });
+      sendCloud("chat", { name: name, text: text, ts: Date.now() }).then(function (res) {
+        if (res && res.ok) { pullChat(); return; }
+        chatText.value = text;
+        alert("Не получилось отправить сообщение. Попробуйте ещё раз.");
+      });
     }
   });
 
@@ -1821,10 +1844,11 @@
       renderComments(photo);
 
       if (DB) {
-        var rPayload = { name: name, text: text, ts: Date.now() };
-        if (isAdmin()) rPayload.owner = 1;
-        cloudPost("replies/" + photo + "/" + cid, rPayload)
-          .then(function () { pullComments(photo); });
+        sendCloud("replies/" + photo + "/" + cid, { name: name, text: text, ts: Date.now() })
+          .then(function (res) {
+            if (res && res.ok) { pullComments(photo); return; }
+            alert("Не получилось отправить ответ. Попробуйте ещё раз.");
+          });
       }
       return;
     }
