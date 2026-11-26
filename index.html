@@ -759,6 +759,33 @@
 
   .ava img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
+  /* кнопка перевода сообщения */
+  .tr {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    margin-left: 6px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: inherit;
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+    vertical-align: middle;
+  }
+
+  .tr.on { border-color: var(--violet); background: rgba(167, 139, 250, .18); }
+  .tr[disabled] { opacity: .5; }
+
+  .txt { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .who-line .meta { display: inline-flex; align-items: center; gap: 4px; }
+  .who-line .meta .tr { margin-left: 0; }
+  .msg .who-line .tr { margin-left: 4px; }
+
   .nick { cursor: pointer; }
   .nick:hover { text-decoration: underline; text-decoration-color: rgba(167, 139, 250, .6); }
 
@@ -806,6 +833,7 @@
   .comment .who-line .nick, .reply .who-line .nick { color: var(--violet); font-weight: 600; }
 
   .comment .who-line, .reply .who-line { flex-wrap: wrap; align-items: center; }
+  .comment .who-line, .reply .who-line, .msg .who-line { padding-right: 24px; }
   .comment .who-line > span:last-child, .reply .who-line > span:last-child {
     flex: 0 0 auto;
     white-space: nowrap;
@@ -1212,6 +1240,9 @@
     "Пока тихо. Напиши первым.": { tg: "Ҳоло хомӯшӣ. Аввалин нависед.", en: "Quiet so far. Write first." },
     "Пока никто не писал.": { tg: "Ҳоло касе нанавиштааст.", en: "Nobody has written yet." },
     "Ответить": { tg: "Ҷавоб додан", en: "Reply" },
+    "Перевести": { tg: "Тарҷума кардан", en: "Translate" },
+    "Показать оригинал": { tg: "Намоиши асл", en: "Show original" },
+    "Текст уже на этом языке.": { tg: "Матн аллакай ба ин забон аст.", en: "The text is already in this language." },
     "Ваш ответ…": { tg: "Ҷавоби шумо…", en: "Your reply…" },
     "Удалить": { tg: "Нест кардан", en: "Delete" },
     "Удалить сообщение?": { tg: "Паёмро нест кунем?", en: "Delete this message?" },
@@ -1756,6 +1787,66 @@
            d.toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" });
   }
 
+  /* ── перевод сообщений и комментариев ── */
+  var trCache = load("trCache", {});
+
+  function translate(text) {
+    var src = String(text || "").trim();
+    if (!src) return Promise.resolve("");
+
+    var k = LANG + "|" + src;
+    if (trCache[k]) return Promise.resolve(trCache[k]);
+
+    var url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=" +
+              encodeURIComponent(LANG) + "&dt=t&q=" + encodeURIComponent(src);
+
+    return fetch(url).then(function (r) {
+      if (!r.ok) throw new Error("http " + r.status);
+      return r.json();
+    }).then(function (d) {
+      var parts = (d && d[0]) || [];
+      var out = parts.map(function (p) { return (p && p[0]) ? p[0] : ""; }).join("").trim();
+
+      if (out) {
+        trCache[k] = out;
+        var keys = Object.keys(trCache);
+        if (keys.length > 300) delete trCache[keys[0]];
+        save("trCache", trCache);
+      }
+      return out;
+    });
+  }
+
+  function trBtn() {
+    var label = t("Перевести");
+    return '<button class="tr" type="button" title="' + esc(label) +
+           '" aria-label="' + esc(label) + '">🌐</button>';
+  }
+
+  /* какие сообщения сейчас показаны в переводе — переживает обновление из облака */
+  var trShown = {};
+
+  function applyTrShown(root) {
+    if (!root) return;
+    root.querySelectorAll("[data-key]").forEach(function (el) {
+      var key = el.getAttribute("data-key");
+      var out = trShown[key];
+      if (!out) return;
+
+      var txt = el.querySelector(".txt");
+      if (!txt) return;
+      if (txt.getAttribute("data-orig") === null) txt.setAttribute("data-orig", txt.textContent);
+      txt.textContent = out;
+
+      var btn = el.querySelector(".tr");
+      if (btn) {
+        btn.classList.add("on");
+        btn.setAttribute("title", t("Показать оригинал"));
+        btn.setAttribute("aria-label", t("Показать оригинал"));
+      }
+    });
+  }
+
   /* ── сводка на карточке ── */
   function refreshQuick(photoId) {
     var box = document.querySelector('[data-quick="' + photoId + '"]');
@@ -1851,10 +1942,10 @@
         var rdel = (isAdmin() && r.key)
           ? '<button class="del" type="button" data-del-reply="' + esc(r.key) + '" data-cid="' + esc(cid) + '" aria-label="' + t("Удалить") + '">✕</button>'
           : "";
-        return '<div class="reply">' + rdel +
+        return '<div class="reply"' + (r.key ? ' data-key="r:' + esc(r.key) + '"' : "") + ">" + rdel +
                '<div class="who-line"><span class="who-wrap">' + avatarHtml(r) + nameHtml(r) + "</span>" +
-               "<span>" + timeLabel(r.ts) + "</span></div>" +
-               esc(r.text) + "</div>";
+               '<span class="meta">' + timeLabel(r.ts) + trBtn() + "</span></div>" +
+               '<div class="txt">' + esc(r.text) + "</div></div>";
       }).join("");
 
       var ctrl = cid
@@ -1868,10 +1959,10 @@
 
       var kidsBox = kids ? '<div class="replies">' + kids + "</div>" : "";
 
-      return '<div class="comment">' + del +
+      return '<div class="comment"' + (cid ? ' data-key="c:' + esc(cid) + '"' : "") + ">" + del +
              '<div class="who-line"><span class="who-wrap">' + avatarHtml(c) + nameHtml(c) + "</span>" +
-             "<span>" + timeLabel(c.ts) + "</span></div>" +
-             "<div>" + esc(c.text) + "</div>" +
+             '<span class="meta">' + timeLabel(c.ts) + trBtn() + "</span></div>" +
+             '<div class="txt">' + esc(c.text) + "</div>" +
              ctrl + kidsBox + "</div>";
     }).join("");
 
@@ -1880,6 +1971,7 @@
     lastCommentsHtml = html;
     lastCommentsPhoto = photoId;
     photoComments.innerHTML = html;
+    applyTrShown(photoComments);
 
     /* возвращаем открытые поля и текст на место */
     photoComments.querySelectorAll(".reply-box").forEach(function (b) {
@@ -2001,10 +2093,13 @@
       var del = (isAdmin() && m.key)
         ? '<button class="del" type="button" data-del-chat="' + esc(m.key) + '" aria-label="' + t("Удалить") + '">✕</button>'
         : "";
-      return '<div class="msg' + (m.mine ? " mine" : "") + '">' + del +
-             '<div class="who-line">' + avatarHtml(m) + nameHtml(m) + " · " + timeLabel(m.ts) + "</div>" +
-             esc(m.text) + "</div>";
+      var mk = m.key || (String(m.ts || 0) + "|" + String(m.text || ""));
+      return '<div class="msg' + (m.mine ? " mine" : "") + '" data-key="m:' + esc(mk) + '">' + del +
+             '<div class="who-line">' + avatarHtml(m) + nameHtml(m) + " · " + timeLabel(m.ts) + trBtn() + "</div>" +
+             '<div class="txt">' + esc(m.text) + "</div></div>";
     }).join("");
+
+    applyTrShown(chatList);
 
     chatList.scrollTop = chatList.scrollHeight;
   }
@@ -2564,6 +2659,48 @@
     openPerson(nick.getAttribute("data-uid") || "", nick.getAttribute("data-person") || "");
   });
 
+  /* ── перевод одного сообщения: 🌐 ── */
+  document.addEventListener("click", function (e) {
+    var btn = (e.target && e.target.closest) ? e.target.closest(".tr") : null;
+    if (!btn) return;
+
+    var box = btn.closest(".comment, .reply, .msg");
+    var txt = box ? box.querySelector(".txt") : null;
+    if (!txt) return;
+
+    var key = box.getAttribute("data-key") || "";
+
+    /* уже переведено — вернуть оригинал */
+    if (txt.getAttribute("data-orig") !== null) {
+      txt.textContent = txt.getAttribute("data-orig");
+      txt.removeAttribute("data-orig");
+      btn.classList.remove("on");
+      btn.setAttribute("title", t("Перевести"));
+      btn.setAttribute("aria-label", t("Перевести"));
+      if (key) delete trShown[key];
+      return;
+    }
+
+    var orig = txt.textContent;
+    if (!orig.trim()) return;
+
+    btn.disabled = true;
+    translate(orig).then(function (out) {
+      btn.disabled = false;
+      if (!out) { alert(t("Не получилось. Попробуйте ещё раз.")); return; }
+      if (out.trim() === orig.trim()) { alert(t("Текст уже на этом языке.")); return; }
+      txt.setAttribute("data-orig", orig);
+      txt.textContent = out;
+      btn.classList.add("on");
+      btn.setAttribute("title", t("Показать оригинал"));
+      btn.setAttribute("aria-label", t("Показать оригинал"));
+      if (key) trShown[key] = out;
+    }).catch(function () {
+      btn.disabled = false;
+      alert(t("Не получилось. Попробуйте ещё раз."));
+    });
+  });
+
   /* ── своя аватарка ── */
   var avaFile = document.getElementById("ava-file");
 
@@ -2662,6 +2799,11 @@
   function applyLang() {
     applyStatic();
     document.documentElement.lang = LANG;
+
+    /* сменили язык — показанные переводы сбрасываем на оригинал */
+    trShown = {};
+    lastCommentsHtml = "";
+    lastCommentsPhoto = null;
 
     var lb = document.getElementById("lang-btn");
     if (lb) lb.textContent = LANG_LABEL[LANG] || "RU";
