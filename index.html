@@ -117,6 +117,10 @@
 
   .cover-top, .cover-bottom { position: relative; z-index: 2; padding: 0 22px; }
 
+  .top-actions { display: flex; align-items: center; gap: 8px; }
+
+  #lang-btn { min-width: 44px; letter-spacing: .08em; }
+
   .cover-top {
     display: flex;
     justify-content: space-between;
@@ -734,112 +738,6 @@
     html { scroll-behavior: auto; }
   }
 
-  /* ── фейковый бан (шутка) ───────────────── */
-  .ban-screen {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 22px;
-    background:
-      radial-gradient(120% 70% at 50% 0%, rgba(120, 20, 55, .55) 0%, rgba(13, 8, 23, 0) 62%),
-      linear-gradient(180deg, #150a1f 0%, #0d0817 55%, #07040d 100%);
-    -webkit-backdrop-filter: blur(6px);
-    backdrop-filter: blur(6px);
-    text-align: center;
-    overflow-y: auto;
-  }
-
-  .ban-screen.open { display: flex; }
-
-  .ban-card {
-    width: 100%;
-    max-width: 380px;
-    padding: 26px 20px 22px;
-    border-radius: 22px;
-    border: 1px solid rgba(244, 63, 94, .35);
-    background: linear-gradient(180deg, rgba(35, 12, 26, .92), rgba(16, 9, 26, .96));
-    box-shadow: 0 26px 70px rgba(0, 0, 0, .65), 0 0 40px rgba(244, 63, 94, .12);
-  }
-
-  .ban-lock {
-    width: 58px;
-    height: 58px;
-    margin: 0 auto 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    font-size: 26px;
-    background: rgba(244, 63, 94, .14);
-    border: 1px solid rgba(244, 63, 94, .45);
-    animation: banPulse 2.2s ease-in-out infinite;
-  }
-
-  @keyframes banPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, .35); }
-    50% { box-shadow: 0 0 0 14px rgba(244, 63, 94, 0); }
-  }
-
-  .ban-title {
-    font-size: 21px;
-    font-weight: 700;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-    color: #fda4af;
-  }
-
-  .ban-sub {
-    margin: 8px 0 18px;
-    font-size: 13.5px;
-    line-height: 1.45;
-    color: rgba(244, 241, 251, .78);
-  }
-
-  .ban-meta {
-    display: grid;
-    gap: 8px;
-    margin-bottom: 16px;
-    text-align: left;
-  }
-
-  .ban-meta > div {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 9px 12px;
-    border-radius: 12px;
-    border: 1px solid rgba(244, 241, 251, .09);
-    background: rgba(255, 255, 255, .03);
-    font-size: 12.5px;
-  }
-
-  .ban-meta span { color: rgba(244, 241, 251, .55); }
-  .ban-meta b { font-weight: 600; text-align: right; }
-
-  .ban-note {
-    margin: 0 0 16px;
-    font-size: 11.5px;
-    line-height: 1.5;
-    color: rgba(244, 241, 251, .45);
-  }
-
-  .ban-joke {
-    width: 100%;
-    padding: 13px 16px;
-    border-radius: 999px;
-    border: 1px solid rgba(167, 139, 250, .5);
-    background: linear-gradient(135deg, #7c3aed, #a855f7);
-    color: #fff;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .ban-joke[hidden] { display: none; }
-
   /* ── аватарки и профиль человека ────────── */
   .ava {
     display: inline-flex;
@@ -959,7 +857,10 @@
 
   <div class="cover-top">
     <span>hussiensosal.jo3.org</span>
-    <button class="auth-btn" id="auth-open" type="button">Войти</button>
+    <div class="top-actions">
+      <button class="auth-btn" id="lang-btn" type="button" aria-label="Язык">RU</button>
+      <button class="auth-btn" id="auth-open" type="button">Войти</button>
+    </div>
   </div>
 
   <div class="cover-bottom">
@@ -1191,6 +1092,227 @@
   function save(key, value) {
     try { localStorage.setItem("album:" + key, JSON.stringify(value)); } catch (e) {}
   }
+
+  /* ── языки: русский, таджикский, английский ── */
+  var LANGS = ["ru", "tg", "en"];
+  var LANG = load("lang", "ru");
+
+  var DICT = {
+    "Войти": { tg: "Даромадан", en: "Sign in" },
+    "Фотоальбом": { tg: "Аксолбом", en: "Photo album" },
+    "Октябрь 2026": { tg: "Октябр 2026", en: "October 2026" },
+    "Ноябрь 2026": { tg: "Ноябр 2026", en: "November 2026" },
+    "Декабрь 2026": { tg: "Декабр 2026", en: "December 2026" },
+    "Страница 2": { tg: "Саҳифаи 2", en: "Page 2" },
+    "Страница 3": { tg: "Саҳифаи 3", en: "Page 3" },
+    "Кадр дня": { tg: "Акси рӯз", en: "Shot of the day" },
+    "Перемена": { tg: "Танаффус", en: "Break" },
+    "Перемены": { tg: "Танаффусҳо", en: "Breaks" },
+    "Дисциплина": { tg: "Интизом", en: "Discipline" },
+    "Дисциплина · 3 фото": { tg: "Интизом · 3 акс", en: "Discipline · 3 photos" },
+    "Люди": { tg: "Одамон", en: "People" },
+    "Альбомы": { tg: "Албомҳо", en: "Albums" },
+    "Альбом": { tg: "Албом", en: "Album" },
+    "3 фото": { tg: "3 акс", en: "3 photos" },
+    "скоро": { tg: "ба зудӣ", en: "soon" },
+    "© 2026 Все права защищены Hussien": {
+      tg: "© 2026 Ҳамаи ҳуқуқҳо ҳифз шудаанд Hussien",
+      en: "© 2026 All rights reserved Hussien"
+    },
+    "Сделано компанией": { tg: "Аз ҷониби ширкати", en: "Made by" },
+
+    "Комментарии": { tg: "Шарҳҳо", en: "Comments" },
+    "Ваше имя": { tg: "Номи шумо", en: "Your name" },
+    "Написать комментарий…": { tg: "Шарҳ нависед…", en: "Write a comment…" },
+    "Отправить": { tg: "Фиристодан", en: "Send" },
+    "Пока сохраняется только на этом устройстве.": {
+      tg: "Ҳоло танҳо дар ин дастгоҳ нигоҳ дошта мешавад.",
+      en: "Currently saved on this device only."
+    },
+    "Сохраняется на сервере: видно всем посетителям сайта.": {
+      tg: "Дар сервер нигоҳ дошта мешавад: ба ҳамаи меҳмонон дида мешавад.",
+      en: "Saved on the server: visible to every visitor."
+    },
+
+    "Чат сайта": { tg: "Чати сайт", en: "Site chat" },
+    "Сообщение…": { tg: "Паём…", en: "Message…" },
+    "Пока сообщения видны только на этом устройстве. Для общего чата нужен сервер.": {
+      tg: "Ҳоло паёмҳо танҳо дар ин дастгоҳ дида мешаванд. Барои чати умумӣ сервер лозим аст.",
+      en: "Messages are visible on this device only. The public chat needs a server."
+    },
+
+    "Написать Хусейну": { tg: "Ба Ҳусайн навиштан", en: "Message Hussein" },
+    "Сообщение увидит только Хусейн.": { tg: "Паёмро танҳо Ҳусайн мебинад.", en: "Only Hussein will see it." },
+    "Личные сообщения с сайта. Видны только вам.": {
+      tg: "Паёмҳои шахсӣ аз сайт. Танҳо ба шумо дида мешаванд.",
+      en: "Private messages from the site. Only you can see them."
+    },
+    "Общий чат сайта →": { tg: "Чати умумии сайт →", en: "Site public chat →" },
+
+    "Аккаунт": { tg: "Ҳисоб", en: "Account" },
+    "Вход": { tg: "Даромадан", en: "Sign in" },
+    "Регистрация": { tg: "Бақайдгирӣ", en: "Sign up" },
+    "Почта": { tg: "Почта", en: "Email" },
+    "Пароль": { tg: "Рамз", en: "Password" },
+    "Создать аккаунт": { tg: "Сохтани ҳисоб", en: "Create account" },
+    "Аккаунт нужен, чтобы подписываться своим именем. Читать и писать можно и без него.": {
+      tg: "Ҳисоб барои бо номи худ навиштан лозим аст. Хондан ва навиштан бе он ҳам мумкин аст.",
+      en: "An account signs your posts with your name. You can read and write without one."
+    },
+    "Аватарка": { tg: "Аватар", en: "Avatar" },
+    "Сначала войдите в аккаунт.": { tg: "Аввал ба ҳисоб дароед.", en: "Sign in first." },
+    "Не удалось определить аккаунт. Войдите заново.": {
+      tg: "Ҳисоб муайян нашуд. Аз нав дароед.",
+      en: "Could not identify the account. Sign in again."
+    },
+    "Не получилось прочитать картинку.": { tg: "Акс хонда нашуд.", en: "Could not read the image." },
+    "Аватарка сохранена на телефоне: нет связи с сервером.": {
+      tg: "Аватар дар телефон нигоҳ дошта шуд: алоқа бо сервер нест.",
+      en: "Avatar saved on the phone: no connection to the server."
+    },
+    "Аккаунты ещё не подключены: нужен ключ Firebase.": {
+      tg: "Ҳисобҳо ҳоло пайваст нестанд: калиди Firebase лозим аст.",
+      en: "Accounts are not connected yet: a Firebase key is required."
+    },
+    "Выйти": { tg: "Баромадан", en: "Sign out" },
+    "Размер аватарок": { tg: "Андозаи аватарҳо", en: "Avatar size" },
+
+    "Профиль": { tg: "Профил", en: "Profile" },
+    "сообщений": { tg: "паёмҳо", en: "messages" },
+    "лайков": { tg: "лайкҳо", en: "likes" },
+    "первое сообщение": { tg: "паёми аввал", en: "first message" },
+    "Считается по чату, комментариям и ответам.": {
+      tg: "Аз рӯи чат, шарҳҳо ва ҷавобҳо ҳисоб мешавад.",
+      en: "Counted across chat, comments and replies."
+    },
+
+    "Закрыть": { tg: "Пӯшидан", en: "Close" },
+    "Предыдущая страница": { tg: "Саҳифаи пешина", en: "Previous page" },
+    "Следующая страница": { tg: "Саҳифаи навбатӣ", en: "Next page" },
+    "Написать мне": { tg: "Ба ман навиштан", en: "Message me" },
+
+    "Доступ заблокирован": { tg: "Дастрасӣ баста шуд", en: "Access blocked" },
+    "Ваш аккаунт забанен навсегда.": { tg: "Ҳисоби шумо ба таври доимӣ бан шудааст.", en: "Your account is banned forever." },
+    "Вы больше не можете писать, комментировать и ставить реакции.": {
+      tg: "Шумо дигар наметавонед нависед, шарҳ диҳед ва реаксия гузоред.",
+      en: "You can no longer post, comment or react."
+    },
+    "Причина": { tg: "Сабаб", en: "Reason" },
+    "Нарушение правил сообщества": { tg: "Вайрон кардани қоидаҳои ҷомеа", en: "Violation of community rules" },
+    "Срок": { tg: "Муддат", en: "Term" },
+    "Бессрочно": { tg: "Бемуҳлат", en: "Permanent" },
+    "Номер обращения": { tg: "Рақами муроҷиат", en: "Ticket number" },
+    "Апелляция рассматривается в течение 30 рабочих дней. Повторная регистрация приведёт к блокировке по устройству.": {
+      tg: "Апелляция дар давоми 30 рӯзи корӣ баррасӣ мешавад. Бақайдгирии такрорӣ ба бан шудан аз рӯи дастгоҳ оварда мерасонад.",
+      en: "An appeal takes up to 30 business days. Registering again will get the device blocked."
+    },
+    "Это шутка. Продолжить": { tg: "Ин шӯхӣ аст. Идома", en: "It's a joke. Continue" },
+
+    "Комментариев пока нет. Будь первым.": { tg: "Ҳоло шарҳ нест. Аввалин шав.", en: "No comments yet. Be the first." },
+    "Пока тихо. Напиши первым.": { tg: "Ҳоло хомӯшӣ. Аввалин нависед.", en: "Quiet so far. Write first." },
+    "Пока никто не писал.": { tg: "Ҳоло касе нанавиштааст.", en: "Nobody has written yet." },
+    "Ответить": { tg: "Ҷавоб додан", en: "Reply" },
+    "Ваш ответ…": { tg: "Ҷавоби шумо…", en: "Your reply…" },
+    "Удалить": { tg: "Нест кардан", en: "Delete" },
+    "Удалить сообщение?": { tg: "Паёмро нест кунем?", en: "Delete this message?" },
+    "Удалить комментарий?": { tg: "Шарҳро нест кунем?", en: "Delete this comment?" },
+    "Удалить ответ?": { tg: "Ҷавобро нест кунем?", en: "Delete this reply?" },
+    "Не получилось удалить. Войдите в аккаунт админа заново.": {
+      tg: "Нест карда нашуд. Боз бо ҳисоби админ дароед.",
+      en: "Could not delete. Sign in as admin again."
+    },
+    "Отправляю…": { tg: "Мефиристам…", en: "Sending…" },
+    "Отправлено. Хусейн увидит это сообщение.": { tg: "Фиристода шуд. Ҳусайн ин паёмро мебинад.", en: "Sent. Hussein will see it." },
+    "Не получилось отправить. Попробуйте ещё раз.": { tg: "Фиристода нашуд. Аз нав кӯшиш кунед.", en: "Could not send. Try again." },
+
+    "создатель": { tg: "бунёдкор", en: "creator" },
+    "участник сайта": { tg: "иштирокчии сайт", en: "site member" },
+    "роль": { tg: "вазифа", en: "role" },
+    "Ваша роль": { tg: "Вазифаи шумо", en: "Your role" },
+    "Участник": { tg: "Иштирокчӣ", en: "Member" },
+    "Гость": { tg: "Меҳмон", en: "Guest" },
+    "Обычный аккаунт: сообщения подписываются вашим именем.": {
+      tg: "Ҳисоби оддӣ: паёмҳо бо номи шумо имзо мешаванд.",
+      en: "Regular account: posts are signed with your name."
+    },
+    "Вы": { tg: "Шумо", en: "You are" },
+    ": можете удалять сообщения и комментарии.": {
+      tg: ": метавонед паёмҳо ва шарҳҳоро нест кунед.",
+      en: ": you can delete messages and comments."
+    },
+
+    "Введите почту": { tg: "Почтаро ворид кунед", en: "Enter your email" },
+    "Введите пароль": { tg: "Рамзро ворид кунед", en: "Enter your password" },
+    "Введите имя": { tg: "Номро ворид кунед", en: "Enter your name" },
+    "Подождите…": { tg: "Интизор шавед…", en: "Please wait…" },
+    "Готово, вы вошли.": { tg: "Тайёр, шумо даромадед.", en: "Done, you are signed in." },
+    "Не получилось. Попробуйте ещё раз.": { tg: "Нашуд. Аз нав кӯшиш кунед.", en: "Failed. Try again." },
+    "Вы вошли как ": { tg: "Шумо ҳамчун ", en: "Signed in as " },
+    "Ошибка: ": { tg: "Хатогӣ: ", en: "Error: " },
+
+    "Такая почта уже зарегистрирована": { tg: "Ин почта аллакай ба қайд гирифта шудааст", en: "This email is already registered" },
+    "Почта не найдена": { tg: "Почта ёфт нашуд", en: "Email not found" },
+    "Неверный пароль": { tg: "Рамзи нодуруст", en: "Wrong password" },
+    "Неверная почта или пароль": { tg: "Почта ё рамзи нодуруст", en: "Wrong email or password" },
+    "Проверьте адрес почты": { tg: "Почтаро тафтиш кунед", en: "Check the email address" },
+    "Пароль должен быть от 6 символов": { tg: "Рамз бояд аз 6 аломат иборат бошад", en: "Password must be at least 6 characters" },
+    "Слишком много попыток. Попробуйте позже": { tg: "Кӯшишҳо зиёданд. Баъдтар кӯшиш кунед", en: "Too many attempts. Try later" },
+    "Аккаунт отключён": { tg: "Ҳисоб хомӯш карда шудааст", en: "Account disabled" },
+    "Вход по почте не включён в Firebase": { tg: "Даромадан бо почта дар Firebase фаъол нест", en: "Email sign-in is not enabled in Firebase" }
+  };
+
+  function t(s) {
+    var d = DICT[s];
+    return (d && d[LANG]) ? d[LANG] : s;
+  }
+
+  /* статичный текст страницы: запоминаем один раз и переводим при смене языка */
+  var i18nNodes = [];
+
+  function collectStatic() {
+    var skip = "#photo-title, #dm-note";
+    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+    var n;
+    while ((n = walker.nextNode())) {
+      var raw = n.nodeValue || "";
+      var key = raw.trim();
+      if (!key || !DICT[key]) continue;
+      if (n.parentElement && n.parentElement.closest && n.parentElement.closest(skip)) continue;
+      var at = raw.indexOf(key);
+      i18nNodes.push({
+        node: n,
+        key: key,
+        before: raw.slice(0, at),
+        after: raw.slice(at + key.length)
+      });
+    }
+
+    document.querySelectorAll("[placeholder]").forEach(function (el) {
+      var k = (el.getAttribute("placeholder") || "").trim();
+      if (DICT[k]) el.setAttribute("data-ph", k);
+    });
+
+    document.querySelectorAll("[aria-label]").forEach(function (el) {
+      var k = (el.getAttribute("aria-label") || "").trim();
+      if (DICT[k]) el.setAttribute("data-al", k);
+    });
+  }
+
+  function applyStatic() {
+    i18nNodes.forEach(function (it) {
+      it.node.nodeValue = it.before + t(it.key) + it.after;
+    });
+
+    document.querySelectorAll("[data-ph]").forEach(function (el) {
+      el.setAttribute("placeholder", t(el.getAttribute("data-ph")));
+    });
+
+    document.querySelectorAll("[data-al]").forEach(function (el) {
+      el.setAttribute("aria-label", t(el.getAttribute("data-al")));
+    });
+  }
+
+  collectStatic();
 
   var EMOJI = [
     { key: "heart", icon: "❤️", label: "нравится" },
@@ -1492,7 +1614,7 @@
   };
 
   function authErrorText(code) {
-    return AUTH_ERRORS[code] || ("Ошибка: " + code);
+    return AUTH_ERRORS[code] ? t(AUTH_ERRORS[code]) : (t("Ошибка: ") + code);
   }
 
   function startSession(d, name) {
@@ -1614,7 +1736,7 @@
 
     if (!role) return nick;
 
-    var tag = esc(role.tag);
+    var tag = esc(t(role.tag));
     return nick +
            '<span class="' + role.tick + '" title="' + tag + '" aria-label="' + tag + '">✓</span>' +
            '<span class="' + role.pill + '">' + tag + "</span>";
@@ -1622,15 +1744,16 @@
 
   function roleBadgeHtml(role) {
     if (!role) return "";
-    var tag = esc(role.tag);
+    var tag = esc(t(role.tag));
     return '<span class="' + role.tick + '">✓</span>' +
            '<span class="' + role.pill + '">' + tag + "</span>";
   }
 
   function timeLabel(ts) {
     var d = new Date(ts);
-    return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) + ", " +
-           d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+    var loc = LANG === "en" ? "en-GB" : (LANG === "tg" ? "tg-TJ" : "ru-RU");
+    return d.toLocaleDateString(loc, { day: "numeric", month: "short" }) + ", " +
+           d.toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" });
   }
 
   /* ── сводка на карточке ── */
@@ -1710,7 +1833,7 @@
     }
 
     if (!list.length) {
-      photoComments.innerHTML = '<div class="empty-note">Комментариев пока нет. Будь первым.</div>';
+      photoComments.innerHTML = '<div class="empty-note">' + t("Комментариев пока нет. Будь первым.") + "</div>";
       return;
     }
 
@@ -1721,12 +1844,12 @@
       var cid = c.key || "";
 
       var del = (isAdmin() && cid)
-        ? '<button class="del" type="button" data-del-comment="' + esc(cid) + '" aria-label="Удалить">✕</button>'
+        ? '<button class="del" type="button" data-del-comment="' + esc(cid) + '" aria-label="' + t("Удалить") + '">✕</button>'
         : "";
 
       var kids = (rmap[cid] || []).map(function (r) {
         var rdel = (isAdmin() && r.key)
-          ? '<button class="del" type="button" data-del-reply="' + esc(r.key) + '" data-cid="' + esc(cid) + '" aria-label="Удалить">✕</button>'
+          ? '<button class="del" type="button" data-del-reply="' + esc(r.key) + '" data-cid="' + esc(cid) + '" aria-label="' + t("Удалить") + '">✕</button>'
           : "";
         return '<div class="reply">' + rdel +
                '<div class="who-line"><span class="who-wrap">' + avatarHtml(r) + nameHtml(r) + "</span>" +
@@ -1736,10 +1859,10 @@
 
       var ctrl = cid
         ? '<div class="creacts-wrap">' + renderCReacts(photoId, cid, cmap[cid] || {}) +
-          '<button class="reply-toggle" type="button" data-cid="' + esc(cid) + '">Ответить</button>' +
+          '<button class="reply-toggle" type="button" data-cid="' + esc(cid) + '">' + t("Ответить") + "</button>" +
           '<div class="reply-box" data-box="' + esc(cid) + '" hidden>' +
-          '<textarea rows="2" maxlength="300" placeholder="Ваш ответ…"></textarea>' +
-          '<button class="send" type="button" data-reply-send="' + esc(cid) + '">Ответить</button>' +
+          '<textarea rows="2" maxlength="300" placeholder="' + t("Ваш ответ…") + '"></textarea>' +
+          '<button class="send" type="button" data-reply-send="' + esc(cid) + '">' + t("Ответить") + "</button>" +
           "</div></div>"
         : "";
 
@@ -1781,7 +1904,7 @@
 
   function openPhoto(photoId, title) {
     openedPhoto = photoId;
-    photoTitle.textContent = title || "Альбом";
+    photoTitle.textContent = t(title || "Альбом");
     photoImg.src = PHOTOS[photoId] || "";
     photoText.value = "";
     photoName.value = myName || "";
@@ -1870,13 +1993,13 @@
 
   function renderChat() {
     if (!chat.length) {
-      chatList.innerHTML = '<div class="empty-note">Пока тихо. Напиши первым.</div>';
+      chatList.innerHTML = '<div class="empty-note">' + t("Пока тихо. Напиши первым.") + "</div>";
       return;
     }
 
     chatList.innerHTML = chat.map(function (m) {
       var del = (isAdmin() && m.key)
-        ? '<button class="del" type="button" data-del-chat="' + esc(m.key) + '" aria-label="Удалить">✕</button>'
+        ? '<button class="del" type="button" data-del-chat="' + esc(m.key) + '" aria-label="' + t("Удалить") + '">✕</button>'
         : "";
       return '<div class="msg' + (m.mine ? " mine" : "") + '">' + del +
              '<div class="who-line">' + avatarHtml(m) + nameHtml(m) + " · " + timeLabel(m.ts) + "</div>" +
@@ -1943,13 +2066,13 @@
 
   function renderInbox() {
     if (!inbox.length) {
-      dmList.innerHTML = '<div class="empty-note">Пока никто не писал.</div>';
+      dmList.innerHTML = '<div class="empty-note">' + t("Пока никто не писал.") + "</div>";
       return;
     }
 
     dmList.innerHTML = inbox.map(function (m) {
       var del = m.key
-        ? '<button class="del" type="button" data-del-inbox="' + esc(m.key) + '" aria-label="Удалить">✕</button>'
+        ? '<button class="del" type="button" data-del-inbox="' + esc(m.key) + '" aria-label="' + t("Удалить") + '">✕</button>'
         : "";
       return '<div class="msg">' + del +
              '<div class="who-line">' + avatarHtml(m) + nameHtml(m) + " · " + timeLabel(m.ts) + "</div>" +
@@ -1978,6 +2101,7 @@
     dmForm.hidden = admin;
     dmInboxBox.hidden = !admin;
     dmName.value = myName || "";
+    dmNote.textContent = t("Сообщение увидит только Хусейн.");
     if (admin) pullInbox();
     dmSheet.classList.add("open");
     document.body.style.overflow = "hidden";
@@ -2003,14 +2127,14 @@
 
     if (!authState) { myName = name; save("name", myName); }
 
-    dmNote.textContent = "Отправляю…";
+    dmNote.textContent = t("Отправляю…");
 
     cloudPost("inbox", { name: name, text: text, ts: Date.now() }).then(function (res) {
       if (res && res.ok) {
         dmText.value = "";
-        dmNote.textContent = "Отправлено. Хусейн увидит это сообщение.";
+        dmNote.textContent = t("Отправлено. Хусейн увидит это сообщение.");
       } else {
-        dmNote.textContent = "Не получилось отправить. Попробуйте ещё раз.";
+        dmNote.textContent = t("Не получилось отправить. Попробуйте ещё раз.");
       }
     });
   });
@@ -2018,9 +2142,9 @@
   dmList.addEventListener("click", function (e) {
     var b = e.target.closest("[data-del-inbox]");
     if (!b || !isAdmin()) return;
-    if (!confirm("Удалить сообщение?")) return;
+    if (!confirm(t("Удалить сообщение?"))) return;
     cloudDelete("inbox/" + b.getAttribute("data-del-inbox")).then(function (ok) {
-      if (!ok) { alert("Не получилось удалить. Войдите в аккаунт админа заново."); return; }
+      if (!ok) { alert(t("Не получилось удалить. Войдите в аккаунт админа заново.")); return; }
       pullInbox();
     });
   });
@@ -2038,7 +2162,7 @@
 
   function pickName(input) {
     if (authState && authState.name) return authState.name;
-    return (input && input.value || "").trim() || "Гость";
+    return (input && input.value || "").trim() || t("Гость");
   }
 
   function syncNameFields() {
@@ -2065,12 +2189,12 @@
         ? '<img src="' + esc(myPic) + '" alt="">'
         : esc((authState.name || authState.email).slice(0, 1).toUpperCase());
       var pname = document.getElementById("profile-name");
-      pname.textContent = authState.name || "Участник";
+      pname.textContent = authState.name || t("Участник");
       var me = myRole();
       var brow = document.getElementById("profile-badge");
       pname.className = me ? me.cls : "";
       if (me) {
-        var meTag = esc(me.tag);
+        var meTag = esc(t(me.tag));
         brow.innerHTML = '<span class="' + me.tick + '">✓</span>' +
                          '<span class="' + me.pill + '">' + meTag + "</span>";
         brow.hidden = false;
@@ -2080,10 +2204,10 @@
       }
       document.getElementById("profile-mail").textContent = authState.email;
       document.getElementById("profile-role").textContent = me
-        ? "Вы " + me.tag + ": можете удалять сообщения и комментарии."
-        : "Обычный аккаунт: сообщения подписываются вашим именем.";
+        ? t("Ваша роль") + ": " + t(me.tag)
+        : t("Обычный аккаунт: сообщения подписываются вашим именем.");
     } else {
-      btn.textContent = "Войти";
+      btn.textContent = t("Войти");
       btn.classList.remove("on");
       authForm.hidden = false;
       authProfile.hidden = true;
@@ -2099,7 +2223,7 @@
       t.classList.toggle("on", t.getAttribute("data-mode") === mode);
     });
     authName.hidden = mode !== "signup";
-    authSubmit.textContent = mode === "signup" ? "Создать аккаунт" : "Войти";
+    authSubmit.textContent = mode === "signup" ? t("Создать аккаунт") : t("Войти");
     authPass.setAttribute("autocomplete", mode === "signup" ? "new-password" : "current-password");
     authErr.textContent = "";
   }
@@ -2129,15 +2253,15 @@
     var pass = authPass.value;
 
     if (!API_KEY) {
-      authErr.textContent = "Аккаунты ещё не подключены: нужен ключ Firebase.";
+      authErr.textContent = t("Аккаунты ещё не подключены: нужен ключ Firebase.");
       return;
     }
-    if (!email || email.indexOf("@") < 0) { authErr.textContent = "Введите почту"; return; }
-    if (!pass) { authErr.textContent = "Введите пароль"; return; }
-    if (authMode === "signup" && !authName.value.trim()) { authErr.textContent = "Введите имя"; return; }
+    if (!email || email.indexOf("@") < 0) { authErr.textContent = t("Введите почту"); return; }
+    if (!pass) { authErr.textContent = t("Введите пароль"); return; }
+    if (authMode === "signup" && !authName.value.trim()) { authErr.textContent = t("Введите имя"); return; }
 
     authSubmit.disabled = true;
-    authErr.textContent = "Подождите…";
+    authErr.textContent = t("Подождите…");
 
     var job = authMode === "signup"
       ? doSignup(email, pass, authName.value.trim())
@@ -2169,9 +2293,9 @@
   chatList.addEventListener("click", function (e) {
     var b = e.target.closest("[data-del-chat]");
     if (!b || !isAdmin()) return;
-    if (!confirm("Удалить сообщение?")) return;
+    if (!confirm(t("Удалить сообщение?"))) return;
     cloudDelete("chat/" + b.getAttribute("data-del-chat")).then(function (ok) {
-      if (!ok) { alert("Не получилось удалить. Войдите в аккаунт админа заново."); return; }
+      if (!ok) { alert(t("Не получилось удалить. Войдите в аккаунт админа заново.")); return; }
       pullChat();
     });
   });
@@ -2183,9 +2307,9 @@
     var del = e.target.closest("[data-del-comment]");
     if (del) {
       if (!isAdmin()) return;
-      if (!confirm("Удалить комментарий?")) return;
+      if (!confirm(t("Удалить комментарий?"))) return;
       cloudDelete("comments/" + photo + "/" + del.getAttribute("data-del-comment")).then(function (ok) {
-        if (!ok) { alert("Не получилось удалить. Войдите в аккаунт админа заново."); return; }
+        if (!ok) { alert(t("Не получилось удалить. Войдите в аккаунт админа заново.")); return; }
         pullComments(photo);
       });
       return;
@@ -2194,10 +2318,10 @@
     var rdel = e.target.closest("[data-del-reply]");
     if (rdel) {
       if (!isAdmin()) return;
-      if (!confirm("Удалить ответ?")) return;
+      if (!confirm(t("Удалить ответ?"))) return;
       cloudDelete("replies/" + photo + "/" + rdel.getAttribute("data-cid") + "/" + rdel.getAttribute("data-del-reply"))
         .then(function (ok) {
-          if (!ok) { alert("Не получилось удалить. Войдите в аккаунт админа заново."); return; }
+          if (!ok) { alert(t("Не получилось удалить. Войдите в аккаунт админа заново.")); return; }
           pullComments(photo);
         });
       return;
@@ -2276,11 +2400,14 @@
   /* ── подтягиваем данные из облака ── */
   hydrate();
 
-  if (DB) {
+  function applyCloudHints() {
+    if (!DB) return;
     document.querySelectorAll("[data-cloud-hint]").forEach(function (h) {
-      h.textContent = "Сохраняется на сервере: видно всем посетителям сайта.";
+      h.textContent = t("Сохраняется на сервере: видно всем посетителям сайта.");
     });
   }
+
+  applyCloudHints();
 
   setInterval(function () {
     if (!DB) return;
@@ -2297,42 +2424,6 @@
     if (e.key === "ArrowLeft") show(current - 1);
     if (e.key === "ArrowRight") show(current + 1);
   });
-
-  /* ── фейковый бан (шутка): появляется через минуту после открытия сайта ── */
-  var BAN_DELAY = 60000;    /* через сколько выскочит */
-  var BAN_REVEAL = 12000;   /* через сколько появится кнопка «это шутка» */
-
-  function banWasShown() {
-    try { return sessionStorage.getItem("banShown") === "1"; } catch (e) { return false; }
-  }
-
-  function showFakeBan() {
-    if (isAdmin()) return;          /* админов не баним */
-    if (banWasShown()) return;      /* один раз за визит */
-
-    var el = document.getElementById("ban-screen");
-    if (!el) return;
-
-    try { sessionStorage.setItem("banShown", "1"); } catch (e) {}
-
-    var idEl = document.getElementById("ban-id");
-    if (idEl) idEl.textContent = "BAN-" + (100000 + Math.floor(Math.random() * 899999));
-
-    el.classList.add("open");
-    document.body.style.overflow = "hidden";
-
-    var btn = document.getElementById("ban-joke");
-    if (!btn) return;
-
-    btn.onclick = function () {
-      el.classList.remove("open");
-      document.body.style.overflow = "";
-    };
-
-    setTimeout(function () { btn.hidden = false; }, BAN_REVEAL);
-  }
-
-  setTimeout(showFakeBan, BAN_DELAY);
 
   /* ── профиль человека: аватарка, роль, статистика ── */
   var personSheet = document.getElementById("person-sheet");
@@ -2398,7 +2489,7 @@
       if (!role && r.owner) role = roleByCode(r.owner);
     });
 
-    var displayName = name || (mine.length ? mine[0].name : "Участник");
+    var displayName = name || (mine.length ? mine[0].name : t("Участник"));
     var url = (uid && avatars[uid]) || "";
 
     var ava = document.getElementById("person-ava");
@@ -2407,7 +2498,9 @@
       : esc(initialsOf(displayName));
 
     document.getElementById("person-name").textContent = displayName;
-    document.getElementById("person-sub").textContent = role ? ("роль: " + role.tag) : "участник сайта";
+    document.getElementById("person-sub").textContent = role
+      ? (t("роль") + ": " + t(role.tag))
+      : t("участник сайта");
 
     var badge = document.getElementById("person-badge");
     badge.innerHTML = roleBadgeHtml(role);
@@ -2475,7 +2568,7 @@
   var avaFile = document.getElementById("ava-file");
 
   document.getElementById("ava-pick").addEventListener("click", function () {
-    if (!authState) { alert("Сначала войдите в аккаунт."); return; }
+    if (!authState) { alert(t("Сначала войдите в аккаунт.")); return; }
     avaFile.click();
   });
 
@@ -2483,7 +2576,7 @@
     var f = avaFile.files && avaFile.files[0];
     avaFile.value = "";
     if (!f) return;
-    if (!authState) { alert("Сначала войдите в аккаунт."); return; }
+    if (!authState) { alert(t("Сначала войдите в аккаунт.")); return; }
 
     var reader = new FileReader();
     reader.onload = function () {
@@ -2501,11 +2594,11 @@
         if (url.length > 40000) url = c.toDataURL("image/jpeg", 0.5);
 
         ensureUid().then(function (uid) {
-          if (!uid) { alert("Не удалось определить аккаунт. Войдите заново."); return; }
+          if (!uid) { alert(t("Не удалось определить аккаунт. Войдите заново.")); return; }
           saveMyAvatar(uid, url);
         });
       };
-      img.onerror = function () { alert("Не получилось прочитать картинку."); };
+      img.onerror = function () { alert(t("Не получилось прочитать картинку.")); };
       img.src = reader.result;
     };
     reader.readAsDataURL(f);
@@ -2529,7 +2622,7 @@
           alert("Аватарка сохранилась только на этом телефоне: сервер не принял (нужны новые правила для avatars).");
         }
       }).catch(function () {
-        alert("Аватарка сохранена на телефоне: нет связи с сервером.");
+        alert(t("Аватарка сохранена на телефоне: нет связи с сервером."));
       });
     });
   }
@@ -2562,21 +2655,38 @@
     if (chatSheet.classList.contains("open")) renderChat();
     if (openedPhoto) renderComments(openedPhoto);
   });
+
+  /* ── переключение языка: RU → TJ → EN ── */
+  var LANG_LABEL = { ru: "RU", tg: "TJ", en: "EN" };
+
+  function applyLang() {
+    applyStatic();
+    document.documentElement.lang = LANG;
+
+    var lb = document.getElementById("lang-btn");
+    if (lb) lb.textContent = LANG_LABEL[LANG] || "RU";
+
+    if (chatSheet.classList.contains("open")) renderChat();
+    if (openedPhoto) {
+      renderComments(openedPhoto);
+      renderReacts(openedPhoto);
+      refreshQuick(openedPhoto);
+    }
+    refreshAllQuick();
+    applyCloudHints();
+    renderAuth();
+    if (personSheet.classList.contains("open")) renderPerson(personOpen.uid, personOpen.name);
+    if (dmSheet.classList.contains("open") && isAdmin()) renderInbox();
+  }
+
+  document.getElementById("lang-btn").addEventListener("click", function () {
+    var i = LANGS.indexOf(LANG);
+    LANG = LANGS[(i + 1) % LANGS.length];
+    save("lang", LANG);
+    applyLang();
+  });
+
+  applyLang();
 </script>
-  <!-- фейковый бан: появляется через минуту, это шутка -->
-  <div class="ban-screen" id="ban-screen" role="alertdialog" aria-live="assertive">
-    <div class="ban-card">
-      <div class="ban-lock">🔒</div>
-      <div class="ban-title">Доступ заблокирован</div>
-      <p class="ban-sub">Ваш аккаунт забанен навсегда.<br>Вы больше не можете писать, комментировать и ставить реакции.</p>
-      <div class="ban-meta">
-        <div><span>Причина</span><b>Нарушение правил сообщества</b></div>
-        <div><span>Срок</span><b>Бессрочно</b></div>
-        <div><span>Номер обращения</span><b id="ban-id">—</b></div>
-      </div>
-      <p class="ban-note">Апелляция рассматривается в течение 30 рабочих дней. Повторная регистрация приведёт к блокировке по устройству.</p>
-      <button class="ban-joke" id="ban-joke" type="button" hidden>Это шутка. Продолжить</button>
-    </div>
-  </div>
 </body>
 </html>
