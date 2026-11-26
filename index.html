@@ -758,6 +758,7 @@
   }
 
   .ava img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ava[data-person] { cursor: pointer; }
 
   /* кнопка перевода сообщения */
   .tr {
@@ -862,29 +863,92 @@
 
   .profile-ava img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
 
-  .person-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  /* ── карточка профиля ── */
+  .pcard {
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+    background: var(--card);
+    margin-bottom: 12px;
+  }
 
-  .person-ava {
-    width: 64px;
-    height: 64px;
+  .pcard-cover {
+    position: relative;
+    height: 84px;
+    background:
+      radial-gradient(140px 90px at 84% 18%, rgba(34, 211, 238, .3), transparent 70%),
+      radial-gradient(120px 80px at 12% 90%, rgba(244, 114, 182, .24), transparent 72%),
+      linear-gradient(135deg, #4c1d95, #7c3aed 58%, #a855f7);
+  }
+
+  .pcard-cover::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(13, 8, 23, 0) 35%, rgba(27, 18, 48, .85));
+  }
+
+  .pcard-top {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    padding: 0 14px;
+    margin-top: -38px;
+  }
+
+  .pcard-ava {
+    width: 76px;
+    height: 76px;
     flex: 0 0 auto;
     border-radius: 50%;
     overflow: hidden;
     display: grid;
     place-items: center;
-    background: rgba(124, 58, 237, .3);
-    border: 1px solid rgba(167, 139, 250, .5);
-    font-size: 24px;
+    background: rgba(124, 58, 237, .45);
+    border: 3px solid var(--card);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .45);
+    font-size: 28px;
     font-weight: 600;
+    color: var(--fg);
   }
 
-  .person-ava img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .pcard-ava img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-  .person-stats {
+  .pcard-id {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    padding-bottom: 4px;
+  }
+
+  .pcard-name {
+    font-size: 17px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  .prow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    border-top: 1px solid rgba(255, 255, 255, .06);
+    font-size: 12.5px;
+  }
+
+  .prow span { color: var(--muted); flex: 0 0 auto; }
+  .prow b { font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+
+  .pcard-stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 8px;
-    margin-bottom: 14px;
+    padding: 12px 12px 14px;
+    border-top: 1px solid rgba(255, 255, 255, .06);
+    background: rgba(255, 255, 255, .02);
   }
 
   .stat {
@@ -924,7 +988,6 @@
   #ava-range-val { min-width: 46px; text-align: right; font-size: 12px; color: var(--muted); }
 
   #person-sub { font-size: 12px; color: var(--muted); }
-  #person-name { font-size: 16px; }
 </style>
 </head>
 <body>
@@ -1152,19 +1215,25 @@
       <button class="sheet-close" type="button" id="person-close" aria-label="Закрыть">✕</button>
     </div>
     <div class="sheet-body">
-      <div class="person-head">
-        <div class="person-ava" id="person-ava">?</div>
-        <div>
-          <b id="person-name"></b>
-          <div class="badge-row" id="person-badge" hidden></div>
-          <span id="person-sub"></span>
+      <div class="pcard">
+        <div class="pcard-cover"></div>
+        <div class="pcard-top">
+          <div class="pcard-ava" id="person-ava">?</div>
+          <div class="pcard-id">
+            <b class="pcard-name" id="person-name"></b>
+            <div class="badge-row" id="person-badge" hidden></div>
+            <span id="person-sub"></span>
+          </div>
         </div>
-      </div>
 
-      <div class="person-stats">
-        <div class="stat"><b id="stat-msgs">0</b><span>сообщений</span></div>
-        <div class="stat"><b id="stat-likes">0</b><span>лайков</span></div>
-        <div class="stat"><b id="stat-first">—</b><span>первое сообщение</span></div>
+        <div class="prow"><span>Регистрация</span><b id="person-reg">—</b></div>
+        <div class="prow"><span>Активность</span><b id="person-last">—</b></div>
+
+        <div class="pcard-stats">
+          <div class="stat"><b id="stat-msgs">0</b><span>сообщений</span></div>
+          <div class="stat"><b id="stat-likes">0</b><span>лайков</span></div>
+          <div class="stat"><b id="stat-days">0</b><span id="stat-days-label">дней на сайте</span></div>
+        </div>
       </div>
 
       <p class="hint" id="person-note">Считается по чату, комментариям и ответам.</p>
@@ -1295,6 +1364,15 @@
     "сообщений": { tg: "паёмҳо", en: "messages" },
     "лайков": { tg: "лайкҳо", en: "likes" },
     "первое сообщение": { tg: "паёми аввал", en: "first message" },
+    "Активность": { tg: "Фаъолият", en: "Activity" },
+    "только что": { tg: "ҳозир", en: "just now" },
+    "мин. назад": { tg: "дақ. пеш", en: "min ago" },
+    "ч. назад": { tg: "соат пеш", en: "h ago" },
+    "дн. назад": { tg: "рӯз пеш", en: "d ago" },
+    "вчера": { tg: "дирӯз", en: "yesterday" },
+    "день на сайте": { tg: "рӯз дар сайт", en: "day on site" },
+    "дня на сайте": { tg: "рӯз дар сайт", en: "days on site" },
+    "дней на сайте": { tg: "рӯз дар сайт", en: "days on site" },
     "Считается по чату, комментариям и ответам.": {
       tg: "Аз рӯи чат, шарҳҳо ва ҷавобҳо ҳисоб мешавад.",
       en: "Counted across chat, comments and replies."
@@ -1848,11 +1926,13 @@
   }
 
   function avatarHtml(rec) {
+    var k = personKey(rec);
     var url = avatarOf(rec);
     var inner = url
       ? '<img src="' + esc(url) + '" alt="">'
-      : esc(initialsOf(personKey(rec).name));
-    return '<span class="ava">' + inner + "</span>";
+      : esc(initialsOf(k.name));
+    return '<span class="ava" data-person="' + esc(k.name) + '"' +
+           (k.uid ? ' data-uid="' + esc(k.uid) + '"' : "") + ">" + inner + "</span>";
   }
 
   /* имя: кликабельное, с ролью, если она есть */
@@ -2675,13 +2755,45 @@
     return total;
   }
 
+  function fullDate(ts) {
+    var d = new Date(ts);
+    var p = function (n) { return n < 10 ? "0" + n : "" + n; };
+    return p(d.getDate()) + "." + p(d.getMonth() + 1) + "." + d.getFullYear();
+  }
+
+  function agoLabel(ts) {
+    if (!ts) return "—";
+    var diff = Date.now() - ts;
+    if (diff < 0) diff = 0;
+    var min = Math.floor(diff / 60000);
+    if (min < 1) return t("только что");
+    if (min < 60) return min + " " + t("мин. назад");
+    var hr = Math.floor(min / 60);
+    if (hr < 24) return hr + " " + t("ч. назад");
+    var day = Math.floor(hr / 24);
+    if (day === 1) return t("вчера");
+    if (day < 30) return day + " " + t("дн. назад");
+    return shortDate(ts);
+  }
+
+  function daysWord(n) {
+    var m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return "день на сайте";
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return "дня на сайте";
+    return "дней на сайте";
+  }
+
   function renderPerson(uid, name) {
     var mine = collectMessages().filter(function (r) { return samePerson(r, uid, name); });
 
     var first = null;
+    var last = null;
     var role = null;
     mine.forEach(function (r) {
-      if (r.ts && (first === null || r.ts < first)) first = r.ts;
+      if (r.ts) {
+        if (first === null || r.ts < first) first = r.ts;
+        if (last === null || r.ts > last) last = r.ts;
+      }
       if (!role && r.owner) role = roleByCode(r.owner);
     });
 
@@ -2693,7 +2805,10 @@
       ? '<img src="' + esc(url) + '" alt="">'
       : esc(initialsOf(displayName));
 
-    document.getElementById("person-name").textContent = displayName;
+    var nameEl = document.getElementById("person-name");
+    nameEl.textContent = displayName;
+    nameEl.className = "pcard-name" + (role ? " " + role.cls : "");
+
     document.getElementById("person-sub").textContent = role
       ? (t("роль") + ": " + t(role.tag))
       : t("участник сайта");
@@ -2702,9 +2817,17 @@
     badge.innerHTML = roleBadgeHtml(role);
     badge.hidden = !role;
 
+    var days = first ? Math.max(0, Math.floor((Date.now() - first) / 86400000)) : 0;
+
+    document.getElementById("person-reg").textContent = first ? fullDate(first) : "—";
+    document.getElementById("person-last").textContent = last ? agoLabel(last) : "—";
+
     document.getElementById("stat-msgs").textContent = String(mine.length);
     document.getElementById("stat-likes").textContent = String(likesOf(uid, name));
-    document.getElementById("stat-first").textContent = first ? shortDate(first) : "—";
+    document.getElementById("stat-days").textContent = String(days);
+
+    var daysLabel = document.getElementById("stat-days-label");
+    if (daysLabel) daysLabel.textContent = t(daysWord(days));
   }
 
   function openPerson(uid, name) {
