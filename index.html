@@ -854,6 +854,76 @@
   }
 
   .ban-joke[hidden] { display: none; }
+
+  /* ── аватарки и профиль человека ────────── */
+  .ava {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    margin-right: 6px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex: 0 0 auto;
+    background: rgba(124, 58, 237, .3);
+    border: 1px solid rgba(167, 139, 250, .45);
+    font-size: 10px;
+    font-weight: 600;
+    color: #e9e2ff;
+    vertical-align: middle;
+  }
+
+  .ava img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .nick { cursor: pointer; }
+  .nick:hover { text-decoration: underline; text-decoration-color: rgba(167, 139, 250, .6); }
+
+  .profile-ava img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+
+  .person-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+
+  .person-ava {
+    width: 64px;
+    height: 64px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    background: rgba(124, 58, 237, .3);
+    border: 1px solid rgba(167, 139, 250, .5);
+    font-size: 24px;
+    font-weight: 600;
+  }
+
+  .person-ava img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .person-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .stat {
+    padding: 12px 6px;
+    border-radius: 14px;
+    text-align: center;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, .03);
+  }
+
+  .stat b { display: block; font-size: 17px; line-height: 1.2; }
+  .stat span { font-size: 10.5px; color: var(--muted); }
+
+  .row2 { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+  .who-wrap { display: inline-flex; align-items: center; min-width: 0; }
+  .comment .who-line .nick, .reply .who-line .nick { color: var(--violet); font-weight: 600; }
+
+  #person-sub { font-size: 12px; color: var(--muted); }
+  #person-name { font-size: 16px; }
 </style>
 </head>
 <body>
@@ -1048,9 +1118,41 @@
           </div>
         </div>
         <p class="hint" id="profile-role"></p>
-        <button class="send ghost" type="button" id="auth-logout">Выйти</button>
+        <div class="row2">
+          <button class="send ghost" type="button" id="ava-pick">Аватарка</button>
+          <button class="send ghost" type="button" id="auth-logout">Выйти</button>
+        </div>
+        <input type="file" id="ava-file" accept="image/*" hidden>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<!-- профиль человека -->
+<div class="sheet" id="person-sheet">
+  <div class="sheet-inner">
+    <div class="sheet-head">
+      <b id="person-title">Профиль</b>
+      <button class="sheet-close" type="button" id="person-close" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="person-head">
+        <div class="person-ava" id="person-ava">?</div>
+        <div>
+          <b id="person-name"></b>
+          <div class="badge-row" id="person-badge" hidden></div>
+          <span id="person-sub"></span>
+        </div>
+      </div>
+
+      <div class="person-stats">
+        <div class="stat"><b id="stat-msgs">0</b><span>сообщений</span></div>
+        <div class="stat"><b id="stat-likes">0</b><span>лайков</span></div>
+        <div class="stat"><b id="stat-first">—</b><span>первое сообщение</span></div>
+      </div>
+
+      <p class="hint" id="person-note">Считается по чату, комментариям и ответам.</p>
     </div>
   </div>
 </div>
@@ -1093,6 +1195,7 @@
   var creacts = load("creacts", {});
   var cVotes = load("cVotes", {});
   var chat = load("chat", []);
+  var avatars = load("avatars", {});
   var myName = load("name", "");
 
   /* ── облако (Firebase Realtime Database) ──
@@ -1135,6 +1238,7 @@
       Object.keys(data).forEach(function (k) { body[k] = data[k]; });
       var role = myRole();
       if (t && role) body.owner = role.code;
+      if (t && authState && authState.uid) body.uid = authState.uid;
 
       var url = cloudUrl(path) + (t ? "?auth=" + encodeURIComponent(t) : "");
 
@@ -1148,7 +1252,7 @@
         return res.text().then(function (txt) {
           var reason = txt.indexOf("Permission denied") >= 0 ? "denied" : (txt.indexOf("token") >= 0 ? "token" : "other");
 
-          if (!body.owner) return { ok: false, badge: false, reason: reason, status: res.status };
+          if (!body.owner && !body.uid) return { ok: false, badge: false, reason: reason, status: res.status };
 
           var plain = {};
           Object.keys(data).forEach(function (k) { plain[k] = data[k]; });
@@ -1257,6 +1361,15 @@
       });
       refreshAllQuick();
       if (openedPhoto) renderComments(openedPhoto);
+    }).catch(function () {});
+
+    cloudGet("avatars").then(function (data) {
+      if (!data) return;
+      avatars = data;
+      save("avatars", avatars);
+      if (chatSheet && chatSheet.classList.contains("open")) renderChat();
+      if (openedPhoto) renderComments(openedPhoto);
+      if (authState) renderAuth();
     }).catch(function () {});
   }
 
@@ -1428,16 +1541,56 @@
     });
   }
 
-  /* значок роли: только у сообщений, отправленных с аккаунта из списка ROLES */
+  /* ── аватарки ── */
+  function personKey(rec) {
+    var isObj = rec && typeof rec === "object";
+    return {
+      uid: isObj ? (rec.uid || "") : "",
+      name: isObj ? (rec.name || "") : String(rec || "")
+    };
+  }
+
+  function initialsOf(name) {
+    var n = String(name || "?").trim();
+    return n ? n.slice(0, 1).toUpperCase() : "?";
+  }
+
+  function avatarOf(rec) {
+    var k = personKey(rec);
+    return (k.uid && avatars[k.uid]) ? avatars[k.uid] : "";
+  }
+
+  function avatarHtml(rec) {
+    var url = avatarOf(rec);
+    var inner = url
+      ? '<img src="' + esc(url) + '" alt="">'
+      : esc(initialsOf(personKey(rec).name));
+    return '<span class="ava">' + inner + "</span>";
+  }
+
+  /* имя: кликабельное, с ролью, если она есть */
   function nameHtml(rec) {
     var isObj = rec && typeof rec === "object";
-    var s = esc(isObj ? rec.name : rec);
+    var k = personKey(rec);
     var role = isObj ? roleByCode(rec.owner) : null;
-    if (!role) return s;
+
+    var nick = '<span class="nick' + (role ? " " + role.cls : "") + '"' +
+               ' data-person="' + esc(k.name) + '"' +
+               (k.uid ? ' data-uid="' + esc(k.uid) + '"' : "") + ">" +
+               esc(k.name) + "</span>";
+
+    if (!role) return nick;
 
     var tag = esc(role.tag);
-    return '<span class="' + role.cls + '">' + s + "</span>" +
+    return nick +
            '<span class="' + role.tick + '" title="' + tag + '" aria-label="' + tag + '">✓</span>' +
+           '<span class="' + role.pill + '">' + tag + "</span>";
+  }
+
+  function roleBadgeHtml(role) {
+    if (!role) return "";
+    var tag = esc(role.tag);
+    return '<span class="' + role.tick + '">✓</span>' +
            '<span class="' + role.pill + '">' + tag + "</span>";
   }
 
@@ -1543,7 +1696,8 @@
           ? '<button class="del" type="button" data-del-reply="' + esc(r.key) + '" data-cid="' + esc(cid) + '" aria-label="Удалить">✕</button>'
           : "";
         return '<div class="reply">' + rdel +
-               '<div class="who-line"><b>' + nameHtml(r) + "</b><span>" + timeLabel(r.ts) + "</span></div>" +
+               '<div class="who-line"><span class="who-wrap">' + avatarHtml(r) + nameHtml(r) + "</span>" +
+               "<span>" + timeLabel(r.ts) + "</span></div>" +
                esc(r.text) + "</div>";
       }).join("");
 
@@ -1559,7 +1713,8 @@
       var kidsBox = kids ? '<div class="replies">' + kids + "</div>" : "";
 
       return '<div class="comment">' + del +
-             '<div class="who-line"><b>' + nameHtml(c) + "</b><span>" + timeLabel(c.ts) + "</span></div>" +
+             '<div class="who-line"><span class="who-wrap">' + avatarHtml(c) + nameHtml(c) + "</span>" +
+             "<span>" + timeLabel(c.ts) + "</span></div>" +
              "<div>" + esc(c.text) + "</div>" +
              ctrl + kidsBox + "</div>";
     }).join("");
@@ -1655,6 +1810,7 @@
     var entry = { name: name, text: text, ts: Date.now() };
     var meRole = myRole();
     if (meRole) entry.owner = meRole.code;
+    if (authState && authState.uid) entry.uid = authState.uid;
     list.push(entry);
     save("comments", comments);
 
@@ -1690,7 +1846,7 @@
         ? '<button class="del" type="button" data-del-chat="' + esc(m.key) + '" aria-label="Удалить">✕</button>'
         : "";
       return '<div class="msg' + (m.mine ? " mine" : "") + '">' + del +
-             '<div class="who-line">' + nameHtml(m) + " · " + timeLabel(m.ts) + "</div>" +
+             '<div class="who-line">' + avatarHtml(m) + nameHtml(m) + " · " + timeLabel(m.ts) + "</div>" +
              esc(m.text) + "</div>";
     }).join("");
 
@@ -1724,6 +1880,7 @@
     var entry = { name: name, text: text, ts: Date.now(), mine: true };
     var meRole = myRole();
     if (meRole) entry.owner = meRole.code;
+    if (authState && authState.uid) entry.uid = authState.uid;
     chat.push(entry);
     save("chat", chat);
 
@@ -1762,7 +1919,7 @@
         ? '<button class="del" type="button" data-del-inbox="' + esc(m.key) + '" aria-label="Удалить">✕</button>'
         : "";
       return '<div class="msg">' + del +
-             '<div class="who-line">' + nameHtml(m) + " · " + timeLabel(m.ts) + "</div>" +
+             '<div class="who-line">' + avatarHtml(m) + nameHtml(m) + " · " + timeLabel(m.ts) + "</div>" +
              esc(m.text) + "</div>";
     }).join("");
   }
@@ -1869,7 +2026,11 @@
       btn.classList.add("on");
       authForm.hidden = true;
       authProfile.hidden = false;
-      document.getElementById("profile-ava").textContent = (authState.name || authState.email).slice(0, 1).toUpperCase();
+      var pAva = document.getElementById("profile-ava");
+      var myPic = (authState.uid && avatars[authState.uid]) || "";
+      pAva.innerHTML = myPic
+        ? '<img src="' + esc(myPic) + '" alt="">'
+        : esc((authState.name || authState.email).slice(0, 1).toUpperCase());
       var pname = document.getElementById("profile-name");
       pname.textContent = authState.name || "Участник";
       var me = myRole();
@@ -2039,6 +2200,7 @@
       var rEntry = { name: name, text: text, ts: Date.now() };
       var myR = myRole();
       if (myR) rEntry.owner = myR.code;
+      if (authState && authState.uid) rEntry.uid = authState.uid;
       replies[photo][cid].push(rEntry);
 
       rta.value = "";
@@ -2138,6 +2300,202 @@
   }
 
   setTimeout(showFakeBan, BAN_DELAY);
+
+  /* ── профиль человека: аватарка, роль, статистика ── */
+  var personSheet = document.getElementById("person-sheet");
+  var personOpen = { uid: "", name: "" };
+
+  function closePerson() {
+    personSheet.classList.remove("open");
+    document.body.style.overflow = "";
+  }
+
+  document.getElementById("person-close").addEventListener("click", closePerson);
+  personSheet.addEventListener("click", function (e) { if (e.target === personSheet) closePerson(); });
+
+  function shortDate(ts) {
+    var d = new Date(ts);
+    var p = function (n) { return n < 10 ? "0" + n : "" + n; };
+    return p(d.getDate()) + "." + p(d.getMonth() + 1) + "." + String(d.getFullYear()).slice(2);
+  }
+
+  function samePerson(rec, uid, name) {
+    if (!rec) return false;
+    var sameName = String(rec.name || "").trim().toLowerCase() === String(name || "").trim().toLowerCase();
+    if (rec.uid && uid) return rec.uid === uid;
+    if (rec.uid && !uid) return false;
+    return sameName;
+  }
+
+  function collectMessages() {
+    var out = chat.slice();
+    Object.keys(comments).forEach(function (pid) {
+      asArray(comments[pid]).forEach(function (c) { out.push(c); });
+    });
+    Object.keys(replies).forEach(function (pid) {
+      var rp = replies[pid] || {};
+      Object.keys(rp).forEach(function (cid) {
+        asArray(rp[cid]).forEach(function (r) { out.push(r); });
+      });
+    });
+    return out;
+  }
+
+  function likesOf(uid, name) {
+    var total = 0;
+    Object.keys(creacts).forEach(function (pid) {
+      var byComment = creacts[pid] || {};
+      asArray(comments[pid]).forEach(function (c) {
+        if (!samePerson(c, uid, name)) return;
+        var agg = byComment[c.key];
+        if (!agg) return;
+        Object.keys(agg).forEach(function (t) { total += agg[t] || 0; });
+      });
+    });
+    return total;
+  }
+
+  function renderPerson(uid, name) {
+    var mine = collectMessages().filter(function (r) { return samePerson(r, uid, name); });
+
+    var first = null;
+    var role = null;
+    mine.forEach(function (r) {
+      if (r.ts && (first === null || r.ts < first)) first = r.ts;
+      if (!role && r.owner) role = roleByCode(r.owner);
+    });
+
+    var displayName = name || (mine.length ? mine[0].name : "Участник");
+    var url = (uid && avatars[uid]) || "";
+
+    var ava = document.getElementById("person-ava");
+    ava.innerHTML = url
+      ? '<img src="' + esc(url) + '" alt="">'
+      : esc(initialsOf(displayName));
+
+    document.getElementById("person-name").textContent = displayName;
+    document.getElementById("person-sub").textContent = role ? ("роль: " + role.tag) : "участник сайта";
+
+    var badge = document.getElementById("person-badge");
+    badge.innerHTML = roleBadgeHtml(role);
+    badge.hidden = !role;
+
+    document.getElementById("stat-msgs").textContent = String(mine.length);
+    document.getElementById("stat-likes").textContent = String(likesOf(uid, name));
+    document.getElementById("stat-first").textContent = first ? shortDate(first) : "—";
+  }
+
+  function openPerson(uid, name) {
+    personOpen = { uid: uid || "", name: name || "" };
+    renderPerson(personOpen.uid, personOpen.name);
+
+    personSheet.classList.add("open");
+    document.body.style.overflow = "hidden";
+
+    /* подтягиваем свежие данные, чтобы цифры были точными */
+    Promise.all([
+      cloudGet("chat"),
+      cloudGet("comments"),
+      cloudGet("replies"),
+      cloudGet("creacts")
+    ]).then(function (res) {
+      if (res[0]) chat = asArray(res[0]).sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });
+
+      if (res[1]) {
+        Object.keys(res[1]).forEach(function (pid) {
+          comments[pid] = asArray(res[1][pid]).sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });
+        });
+      }
+
+      if (res[2]) {
+        Object.keys(res[2]).forEach(function (pid) {
+          replies[pid] = {};
+          Object.keys(res[2][pid] || {}).forEach(function (cid) {
+            replies[pid][cid] = asArray(res[2][pid][cid]).sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });
+          });
+        });
+      }
+
+      if (res[3]) {
+        Object.keys(res[3]).forEach(function (pid) {
+          creacts[pid] = {};
+          Object.keys(res[3][pid] || {}).forEach(function (cid) {
+            creacts[pid][cid] = aggregate(res[3][pid][cid]);
+          });
+        });
+      }
+
+      renderPerson(personOpen.uid, personOpen.name);
+    }).catch(function () {});
+  }
+
+  /* клик по нику в чате, комментариях или ответах */
+  document.addEventListener("click", function (e) {
+    var t = e.target;
+    var nick = t && t.closest ? t.closest("[data-person]") : null;
+    if (!nick) return;
+    e.preventDefault();
+    openPerson(nick.getAttribute("data-uid") || "", nick.getAttribute("data-person") || "");
+  });
+
+  /* ── своя аватарка ── */
+  var avaFile = document.getElementById("ava-file");
+
+  document.getElementById("ava-pick").addEventListener("click", function () {
+    if (!authState || !authState.uid) { alert("Сначала войдите в аккаунт."); return; }
+    avaFile.click();
+  });
+
+  avaFile.addEventListener("change", function () {
+    var f = avaFile.files && avaFile.files[0];
+    avaFile.value = "";
+    if (!f) return;
+    if (!authState || !authState.uid) { alert("Сначала войдите в аккаунт."); return; }
+
+    var reader = new FileReader();
+    reader.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var S = 128;
+        var c = document.createElement("canvas");
+        c.width = S;
+        c.height = S;
+        var g = c.getContext("2d");
+        var side = Math.min(img.width, img.height) || S;
+        g.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, S, S);
+
+        var url = c.toDataURL("image/jpeg", 0.72);
+        if (url.length > 40000) url = c.toDataURL("image/jpeg", 0.5);
+        saveMyAvatar(authState.uid, url);
+      };
+      img.onerror = function () { alert("Не получилось прочитать картинку."); };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(f);
+  });
+
+  function saveMyAvatar(uid, url) {
+    avatars[uid] = url;
+    save("avatars", avatars);
+    renderAuth();
+    if (chatSheet.classList.contains("open")) renderChat();
+    if (openedPhoto) renderComments(openedPhoto);
+
+    token().then(function (t) {
+      if (!t) return;
+      fetch(cloudUrl("avatars/" + uid) + "?auth=" + encodeURIComponent(t), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(url)
+      }).then(function (r) {
+        if (!r.ok) {
+          alert("Аватарка сохранилась только на этом телефоне: сервер не принял (нужны новые правила для avatars).");
+        }
+      }).catch(function () {
+        alert("Аватарка сохранена на телефоне: нет связи с сервером.");
+      });
+    });
+  }
 </script>
   <!-- фейковый бан: появляется через минуту, это шутка -->
   <div class="ban-screen" id="ban-screen" role="alertdialog" aria-live="assertive">
