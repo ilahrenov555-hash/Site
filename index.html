@@ -200,11 +200,11 @@
     vertical-align: middle;
   }
 
-  /* ── розовый ник (второй админ) ── */
-  .pink,
-  .who b.pink,
-  .who-line b.pink {
-    background: linear-gradient(90deg, #f472b6, #fb7185, #f9a8d4, #f472b6);
+  /* ── красный ник (второй админ) ── */
+  .red,
+  .who b.red,
+  .who-line b.red {
+    background: linear-gradient(90deg, #b91c1c, #ef4444, #f87171, #ef4444, #b91c1c);
     background-size: 220% 100%;
     -webkit-background-clip: text;
     background-clip: text;
@@ -213,16 +213,16 @@
     animation: shineMove 6s linear infinite;
   }
 
-  .tick.pink-tick {
-    background: linear-gradient(135deg, #f472b6, #fb7185);
+  .tick.red-tick {
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
     color: #0d0817;
     -webkit-text-fill-color: #0d0817;
   }
 
-  .role.pink-role {
-    border-color: rgba(244, 114, 182, .55);
-    color: #f9a8d4;
-    -webkit-text-fill-color: #f9a8d4;
+  .role.red-role {
+    border-color: rgba(239, 68, 68, .55);
+    color: #fca5a5;
+    -webkit-text-fill-color: #fca5a5;
   }
 
   .badge-row { display: flex; align-items: center; gap: 4px; margin: 2px 0 3px; }
@@ -1269,7 +1269,7 @@
      code — метка, которая уходит в базу (поле owner): 1 — создатель, 2 — фембой. */
   const ROLE_DEFS = {
     1: { code: 1, tag: "создатель", cls: "shine", tick: "tick", pill: "role" },
-    2: { code: 2, tag: "фембой", cls: "pink", tick: "tick pink-tick", pill: "role pink-role" }
+    2: { code: 2, tag: "меллстрой", cls: "red", tick: "tick red-tick", pill: "role red-role" }
   };
 
   var roleEmails = { 1: "ilahrenov251@gmail.com", 2: "adolfposter1945@gmail.com" };
