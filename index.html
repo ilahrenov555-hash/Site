@@ -711,6 +711,18 @@
   .profile b { display: block; font-size: 15px; }
   .profile span { font-size: 12.5px; color: var(--muted); word-break: break-all; }
 
+  .mini-cover {
+    height: 76px;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 12px;
+    border: 1px solid var(--line);
+    background: var(--card);
+  }
+
+  .mini-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .mini-cover[hidden] { display: none; }
+
   .ghost { background: transparent; border: 1px solid var(--line); color: var(--fg); }
 
   .comment, .msg { position: relative; }
@@ -874,12 +886,15 @@
 
   .pcard-cover {
     position: relative;
-    height: 84px;
+    aspect-ratio: 4 / 1;
     background:
       radial-gradient(140px 90px at 84% 18%, rgba(34, 211, 238, .3), transparent 70%),
       radial-gradient(120px 80px at 12% 90%, rgba(244, 114, 182, .24), transparent 72%),
       linear-gradient(135deg, #4c1d95, #7c3aed 58%, #a855f7);
   }
+
+  .pcard-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .pcard-cover img[hidden] { display: none; }
 
   .pcard-cover::after {
     content: "";
@@ -961,6 +976,41 @@
 
   .stat b { display: block; font-size: 17px; line-height: 1.2; }
   .stat span { font-size: 10.5px; color: var(--muted); }
+
+  /* ── выбор ракурса ── */
+  #crop-sheet { z-index: 90; }
+
+  .crop-wrap { display: flex; justify-content: center; margin-bottom: 14px; }
+
+  .crop-wrap canvas {
+    display: block;
+    touch-action: none;
+    cursor: grab;
+    background: #150e24;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .5), 0 0 0 1px rgba(167, 139, 250, .35);
+  }
+
+  .crop-wrap.ava canvas {
+    width: min(74vw, 280px);
+    height: min(74vw, 280px);
+    border-radius: 50%;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .5), 0 0 0 2px rgba(167, 139, 250, .65);
+  }
+
+  .crop-wrap.banner canvas {
+    width: 100%;
+    aspect-ratio: 4 / 1;
+    border-radius: 12px;
+  }
+
+  .crop-zoom { display: flex; align-items: center; gap: 10px; margin: 0 0 16px; }
+  .crop-zoom span { width: 16px; text-align: center; color: var(--muted); font-size: 16px; line-height: 1; }
+  .crop-zoom input[type="range"] {
+    flex: 1 1 auto;
+    height: 26px;
+    accent-color: #a78bfa;
+    background: transparent;
+  }
 
   .row2 { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 
@@ -1181,6 +1231,7 @@
       </div>
 
       <div id="auth-profile" hidden>
+        <div class="mini-cover" id="mini-cover" hidden><img id="mini-cover-img" alt=""></div>
         <div class="profile">
           <div class="profile-ava" id="profile-ava">?</div>
           <div>
@@ -1192,9 +1243,11 @@
         <p class="hint" id="profile-role"></p>
         <div class="row2">
           <button class="send ghost" type="button" id="ava-pick">Аватарка</button>
+          <button class="send ghost" type="button" id="banner-pick">Баннер</button>
           <button class="send ghost" type="button" id="auth-logout">Выйти</button>
         </div>
         <input type="file" id="ava-file" accept="image/*" hidden>
+        <input type="file" id="banner-file" accept="image/*" hidden>
       </div>
 
       <div class="sec-title" style="margin: 18px 0 8px;">Размер аватарок</div>
@@ -1203,6 +1256,28 @@
         <span id="ava-range-val">22 px</span>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<!-- выбор ракурса аватарки и баннера -->
+<div class="sheet" id="crop-sheet">
+  <div class="sheet-inner">
+    <div class="sheet-head">
+      <b id="crop-title">Аватарка</b>
+      <button class="sheet-close" type="button" id="crop-close" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="crop-wrap ava" id="crop-wrap">
+        <canvas id="crop-canvas" width="256" height="256"></canvas>
+      </div>
+      <div class="crop-zoom">
+        <span>−</span>
+        <input type="range" id="crop-zoom" min="100" max="400" step="1" value="100" aria-label="Приблизить">
+        <span>+</span>
+      </div>
+      <button class="send" type="button" id="crop-save">Сохранить</button>
+      <p class="hint" id="crop-note">Двигайте фото пальцем, чтобы выбрать ракурс.</p>
     </div>
   </div>
 </div>
@@ -1216,7 +1291,7 @@
     </div>
     <div class="sheet-body">
       <div class="pcard">
-        <div class="pcard-cover"></div>
+        <div class="pcard-cover"><img id="person-cover-img" alt="" hidden></div>
         <div class="pcard-top">
           <div class="pcard-ava" id="person-ava">?</div>
           <div class="pcard-id">
@@ -1343,6 +1418,12 @@
       en: "An account signs your posts with your name. You can read and write without one."
     },
     "Аватарка": { tg: "Аватар", en: "Avatar" },
+    "Баннер": { tg: "Баннер", en: "Banner" },
+    "Приблизить": { tg: "Наздик кардан", en: "Zoom in" },
+    "Сохранить": { tg: "Нигоҳ доштан", en: "Save" },
+    "Двигайте фото пальцем, чтобы выбрать ракурс.": { tg: "Аксро бо ангушт ҳаракат диҳед, то кунҷро интихоб кунед.", en: "Drag the photo with your finger to choose the framing." },
+    "Не получилось сохранить: фото слишком большое.": { tg: "Нигоҳ доштан нашуд: акс хеле калон аст.", en: "Could not save: the photo is too large." },
+    "Баннер сохранён на телефоне: нет связи с сервером.": { tg: "Баннер дар телефон нигоҳ дошта шуд: алоқа бо сервер нест.", en: "Banner saved on the phone: no connection to the server." },
     "Сначала войдите в аккаунт.": { tg: "Аввал ба ҳисоб дароед.", en: "Sign in first." },
     "Не удалось определить аккаунт. Войдите заново.": {
       tg: "Ҳисоб муайян нашуд. Аз нав дароед.",
@@ -1535,6 +1616,7 @@
   var cVotes = load("cVotes", {});
   var chat = load("chat", []);
   var avatars = load("avatars", {});
+  var banners = load("banners", {});
   var myName = load("name", "");
   var games = {};
 
@@ -1714,6 +1796,19 @@
       if (openedPhoto) renderComments(openedPhoto);
       if (authState) renderAuth();
     }).catch(function () {});
+
+    /* свой баннер тянем отдельно: их не нужно грузить всем сразу */
+    if (authState) {
+      ensureUid().then(function (uid) {
+        if (!uid) return;
+        cloudGet("banners/" + uid).then(function (url) {
+          if (typeof url !== "string" || !url) return;
+          banners[uid] = url;
+          save("banners", banners);
+          if (authState) renderAuth();
+        }).catch(function () {});
+      });
+    }
 
     pullGames();
   }
@@ -2489,6 +2584,19 @@
       authProfile.hidden = true;
     }
 
+    var mini = document.getElementById("mini-cover");
+    var miniImg = document.getElementById("mini-cover-img");
+    var myBanner = logged ? ((authState.uid && banners[authState.uid]) || "") : "";
+    if (mini && miniImg) {
+      if (myBanner) {
+        miniImg.src = myBanner;
+        mini.hidden = false;
+      } else {
+        miniImg.removeAttribute("src");
+        mini.hidden = true;
+      }
+    }
+
     authErr.textContent = "";
     syncNameFields();
   }
@@ -2696,7 +2804,7 @@
   }, 6000);
 
   addEventListener("keydown", function (e) {
-    if (e.key === "Escape") { closePhoto(); closeChat(); closeDm(); closeAuth(); closePlay(); }
+    if (e.key === "Escape") { closePhoto(); closeChat(); closeDm(); closeAuth(); closeCrop(); closePlay(); }
     if (e.key === "ArrowLeft") show(current - 1);
     if (e.key === "ArrowRight") show(current + 1);
   });
@@ -2805,6 +2913,18 @@
       ? '<img src="' + esc(url) + '" alt="">'
       : esc(initialsOf(displayName));
 
+    var coverImg = document.getElementById("person-cover-img");
+    var cover = (uid && banners[uid]) || "";
+    if (coverImg) {
+      if (cover) {
+        coverImg.src = cover;
+        coverImg.hidden = false;
+      } else {
+        coverImg.removeAttribute("src");
+        coverImg.hidden = true;
+      }
+    }
+
     var nameEl = document.getElementById("person-name");
     nameEl.textContent = displayName;
     nameEl.className = "pcard-name" + (role ? " " + role.cls : "");
@@ -2872,6 +2992,16 @@
 
       renderPerson(personOpen.uid, personOpen.name);
     }).catch(function () {});
+
+    /* баннер грузим только для этого человека */
+    if (uid && !banners[uid]) {
+      cloudGet("banners/" + uid).then(function (url) {
+        if (typeof url !== "string" || !url) return;
+        banners[uid] = url;
+        save("banners", banners);
+        if (personOpen.uid === uid) renderPerson(personOpen.uid, personOpen.name);
+      }).catch(function () {});
+    }
   }
 
   /* клик по нику в чате, комментариях или ответах */
@@ -2925,8 +3055,168 @@
     });
   });
 
-  /* ── своя аватарка ── */
+  /* ── своя аватарка и баннер: выбор ракурса ── */
   var avaFile = document.getElementById("ava-file");
+  var bannerFile = document.getElementById("banner-file");
+
+  var cropSheet = document.getElementById("crop-sheet");
+  var cropWrap = document.getElementById("crop-wrap");
+  var cropCanvas = document.getElementById("crop-canvas");
+  var cropTitle = document.getElementById("crop-title");
+  var cropZoom = document.getElementById("crop-zoom");
+  var cropNote = document.getElementById("crop-note");
+
+  var crop = { mode: "ava", img: null, zoom: 1, ox: 0, oy: 0, base: 1, drag: null };
+
+  function cropDims() {
+    return crop.mode === "ava" ? { w: 256, h: 256 } : { w: 960, h: 240 };
+  }
+
+  function cropBase() {
+    var d = cropDims();
+    if (!crop.img) return 1;
+    return Math.max(d.w / crop.img.width, d.h / crop.img.height);
+  }
+
+  function cropClamp() {
+    var d = cropDims();
+    if (!crop.img) return;
+    var dw = crop.img.width * crop.base * crop.zoom;
+    var dh = crop.img.height * crop.base * crop.zoom;
+    var mx = Math.max(0, (dw - d.w) / 2);
+    var my = Math.max(0, (dh - d.h) / 2);
+    crop.ox = Math.max(-mx, Math.min(mx, crop.ox));
+    crop.oy = Math.max(-my, Math.min(my, crop.oy));
+  }
+
+  function drawCrop() {
+    if (!crop.img) return;
+    var d = cropDims();
+    var g = cropCanvas.getContext("2d");
+    crop.base = cropBase();
+    cropClamp();
+    var dw = crop.img.width * crop.base * crop.zoom;
+    var dh = crop.img.height * crop.base * crop.zoom;
+    var dx = (d.w - dw) / 2 + crop.ox;
+    var dy = (d.h - dh) / 2 + crop.oy;
+    g.fillStyle = "#150e24";
+    g.fillRect(0, 0, d.w, d.h);
+    g.drawImage(crop.img, dx, dy, dw, dh);
+  }
+
+  function cropLabels() {
+    cropTitle.textContent = crop.mode === "ava" ? t("Аватарка") : t("Баннер");
+    cropNote.textContent = t("Двигайте фото пальцем, чтобы выбрать ракурс.");
+  }
+
+  function openCrop(mode, src) {
+    crop.mode = mode;
+    crop.zoom = 1;
+    crop.ox = 0;
+    crop.oy = 0;
+
+    var d = cropDims();
+    cropCanvas.width = d.w;
+    cropCanvas.height = d.h;
+    cropWrap.className = "crop-wrap " + (mode === "ava" ? "ava" : "banner");
+    cropZoom.value = 100;
+    cropLabels();
+
+    var img = new Image();
+    img.onload = function () {
+      crop.img = img;
+      drawCrop();
+      cropSheet.classList.add("open");
+      document.body.style.overflow = "hidden";
+    };
+    img.onerror = function () { alert(t("Не получилось прочитать картинку.")); };
+    img.src = src;
+  }
+
+  function closeCrop() {
+    cropSheet.classList.remove("open");
+    crop.img = null;
+    crop.drag = null;
+    document.body.style.overflow =
+      (authSheet.classList.contains("open") || personSheet.classList.contains("open")) ? "hidden" : "";
+  }
+
+  document.getElementById("crop-close").addEventListener("click", closeCrop);
+  cropSheet.addEventListener("click", function (e) { if (e.target === cropSheet) closeCrop(); });
+
+  cropCanvas.addEventListener("pointerdown", function (e) {
+    if (!crop.img) return;
+    crop.drag = { x: e.clientX, y: e.clientY, ox: crop.ox, oy: crop.oy };
+    try { cropCanvas.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+
+  cropCanvas.addEventListener("pointermove", function (e) {
+    if (!crop.drag) return;
+    var box = cropCanvas.getBoundingClientRect();
+    var k = box.width ? cropCanvas.width / box.width : 1;
+    crop.ox = crop.drag.ox + (e.clientX - crop.drag.x) * k;
+    crop.oy = crop.drag.oy + (e.clientY - crop.drag.y) * k;
+    drawCrop();
+  });
+
+  function endCropDrag() { crop.drag = null; }
+  cropCanvas.addEventListener("pointerup", endCropDrag);
+  cropCanvas.addEventListener("pointercancel", endCropDrag);
+  cropCanvas.addEventListener("pointerleave", endCropDrag);
+
+  cropZoom.addEventListener("input", function () {
+    crop.zoom = Math.max(1, (Number(cropZoom.value) || 100) / 100);
+    drawCrop();
+  });
+
+  document.getElementById("crop-save").addEventListener("click", function () {
+    if (!crop.img) return;
+    drawCrop();
+
+    var url;
+    if (crop.mode === "ava") {
+      url = cropCanvas.toDataURL("image/jpeg", 0.85);
+      if (url.length > 40000) url = cropCanvas.toDataURL("image/jpeg", 0.7);
+      if (url.length > 40000) url = cropCanvas.toDataURL("image/jpeg", 0.55);
+      if (url.length > 40000) url = cropCanvas.toDataURL("image/jpeg", 0.42);
+
+      if (url.length > 40000) {
+        var small = document.createElement("canvas");
+        small.width = 192;
+        small.height = 192;
+        small.getContext("2d").drawImage(cropCanvas, 0, 0, 192, 192);
+        url = small.toDataURL("image/jpeg", 0.6);
+      }
+
+      if (url.length > 40000) {
+        alert(t("Не получилось сохранить: фото слишком большое."));
+        return;
+      }
+    } else {
+      url = cropCanvas.toDataURL("image/jpeg", 0.78);
+      if (url.length > 250000) url = cropCanvas.toDataURL("image/jpeg", 0.62);
+      if (url.length > 250000) url = cropCanvas.toDataURL("image/jpeg", 0.5);
+      if (url.length > 250000) {
+        alert(t("Не получилось сохранить: фото слишком большое."));
+        return;
+      }
+    }
+
+    var mode = crop.mode;
+    ensureUid().then(function (uid) {
+      if (!uid) { alert(t("Не удалось определить аккаунт. Войдите заново.")); return; }
+      if (mode === "ava") saveMyAvatar(uid, url);
+      else saveMyBanner(uid, url);
+      closeCrop();
+    });
+  });
+
+  function pickImage(file, mode) {
+    var reader = new FileReader();
+    reader.onload = function () { openCrop(mode, String(reader.result || "")); };
+    reader.onerror = function () { alert(t("Не получилось прочитать картинку.")); };
+    reader.readAsDataURL(file);
+  }
 
   document.getElementById("ava-pick").addEventListener("click", function () {
     if (!authState) { alert(t("Сначала войдите в аккаунт.")); return; }
@@ -2938,31 +3228,20 @@
     avaFile.value = "";
     if (!f) return;
     if (!authState) { alert(t("Сначала войдите в аккаунт.")); return; }
+    pickImage(f, "ava");
+  });
 
-    var reader = new FileReader();
-    reader.onload = function () {
-      var img = new Image();
-      img.onload = function () {
-        var S = 128;
-        var c = document.createElement("canvas");
-        c.width = S;
-        c.height = S;
-        var g = c.getContext("2d");
-        var side = Math.min(img.width, img.height) || S;
-        g.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, S, S);
+  document.getElementById("banner-pick").addEventListener("click", function () {
+    if (!authState) { alert(t("Сначала войдите в аккаунт.")); return; }
+    bannerFile.click();
+  });
 
-        var url = c.toDataURL("image/jpeg", 0.72);
-        if (url.length > 40000) url = c.toDataURL("image/jpeg", 0.5);
-
-        ensureUid().then(function (uid) {
-          if (!uid) { alert(t("Не удалось определить аккаунт. Войдите заново.")); return; }
-          saveMyAvatar(uid, url);
-        });
-      };
-      img.onerror = function () { alert(t("Не получилось прочитать картинку.")); };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(f);
+  bannerFile.addEventListener("change", function () {
+    var f = bannerFile.files && bannerFile.files[0];
+    bannerFile.value = "";
+    if (!f) return;
+    if (!authState) { alert(t("Сначала войдите в аккаунт.")); return; }
+    pickImage(f, "banner");
   });
 
   function saveMyAvatar(uid, url) {
@@ -2984,6 +3263,28 @@
         }
       }).catch(function () {
         alert(t("Аватарка сохранена на телефоне: нет связи с сервером."));
+      });
+    });
+  }
+
+  function saveMyBanner(uid, url) {
+    banners[uid] = url;
+    save("banners", banners);
+    renderAuth();
+    if (personSheet.classList.contains("open")) renderPerson(personOpen.uid, personOpen.name);
+
+    token().then(function (t) {
+      if (!t) return;
+      fetch(cloudUrl("banners/" + uid) + "?auth=" + encodeURIComponent(t), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(url)
+      }).then(function (r) {
+        if (!r.ok) {
+          alert("Баннер сохранился только на этом телефоне: сервер не принял (нужны новые правила для banners).");
+        }
+      }).catch(function () {
+        alert(t("Баннер сохранён на телефоне: нет связи с сервером."));
       });
     });
   }
@@ -3252,6 +3553,7 @@
     applyCloudHints();
     renderAuth();
     renderGames();
+    if (cropSheet.classList.contains("open")) cropLabels();
     if (personSheet.classList.contains("open")) renderPerson(personOpen.uid, personOpen.name);
     if (dmSheet.classList.contains("open") && isAdmin()) renderInbox();
   }
