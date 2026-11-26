@@ -200,6 +200,31 @@
     vertical-align: middle;
   }
 
+  /* ── розовый ник (второй админ) ── */
+  .pink,
+  .who b.pink,
+  .who-line b.pink {
+    background: linear-gradient(90deg, #f472b6, #fb7185, #f9a8d4, #f472b6);
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    animation: shineMove 6s linear infinite;
+  }
+
+  .tick.pink-tick {
+    background: linear-gradient(135deg, #f472b6, #fb7185);
+    color: #0d0817;
+    -webkit-text-fill-color: #0d0817;
+  }
+
+  .role.pink-role {
+    border-color: rgba(244, 114, 182, .55);
+    color: #f9a8d4;
+    -webkit-text-fill-color: #f9a8d4;
+  }
+
   .badge-row { display: flex; align-items: center; gap: 4px; margin: 2px 0 3px; }
   .badge-row[hidden] { display: none; }
 
@@ -723,6 +748,112 @@
     * { transition: none !important; animation: none !important; }
     html { scroll-behavior: auto; }
   }
+
+  /* ── фейковый бан (шутка) ───────────────── */
+  .ban-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 22px;
+    background:
+      radial-gradient(120% 70% at 50% 0%, rgba(120, 20, 55, .55) 0%, rgba(13, 8, 23, 0) 62%),
+      linear-gradient(180deg, #150a1f 0%, #0d0817 55%, #07040d 100%);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    text-align: center;
+    overflow-y: auto;
+  }
+
+  .ban-screen.open { display: flex; }
+
+  .ban-card {
+    width: 100%;
+    max-width: 380px;
+    padding: 26px 20px 22px;
+    border-radius: 22px;
+    border: 1px solid rgba(244, 63, 94, .35);
+    background: linear-gradient(180deg, rgba(35, 12, 26, .92), rgba(16, 9, 26, .96));
+    box-shadow: 0 26px 70px rgba(0, 0, 0, .65), 0 0 40px rgba(244, 63, 94, .12);
+  }
+
+  .ban-lock {
+    width: 58px;
+    height: 58px;
+    margin: 0 auto 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 26px;
+    background: rgba(244, 63, 94, .14);
+    border: 1px solid rgba(244, 63, 94, .45);
+    animation: banPulse 2.2s ease-in-out infinite;
+  }
+
+  @keyframes banPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, .35); }
+    50% { box-shadow: 0 0 0 14px rgba(244, 63, 94, 0); }
+  }
+
+  .ban-title {
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #fda4af;
+  }
+
+  .ban-sub {
+    margin: 8px 0 18px;
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: rgba(244, 241, 251, .78);
+  }
+
+  .ban-meta {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 16px;
+    text-align: left;
+  }
+
+  .ban-meta > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(244, 241, 251, .09);
+    background: rgba(255, 255, 255, .03);
+    font-size: 12.5px;
+  }
+
+  .ban-meta span { color: rgba(244, 241, 251, .55); }
+  .ban-meta b { font-weight: 600; text-align: right; }
+
+  .ban-note {
+    margin: 0 0 16px;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: rgba(244, 241, 251, .45);
+  }
+
+  .ban-joke {
+    width: 100%;
+    padding: 13px 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(167, 139, 250, .5);
+    background: linear-gradient(135deg, #7c3aed, #a855f7);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .ban-joke[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -912,10 +1043,7 @@
           <div class="profile-ava" id="profile-ava">?</div>
           <div>
             <b id="profile-name"></b>
-            <div class="badge-row" id="profile-badge" hidden>
-              <span class="tick" title="Создатель">✓</span>
-              <span class="role">создатель</span>
-            </div>
+            <div class="badge-row" id="profile-badge" hidden></div>
             <span id="profile-mail"></span>
           </div>
         </div>
@@ -1005,7 +1133,8 @@
     return token().then(function (t) {
       var body = {};
       Object.keys(data).forEach(function (k) { body[k] = data[k]; });
-      if (t && isAdmin()) body.owner = 1;
+      var role = myRole();
+      if (t && role) body.owner = role.code;
 
       var url = cloudUrl(path) + (t ? "?auth=" + encodeURIComponent(t) : "");
 
@@ -1041,7 +1170,7 @@
       return "Не получилось отправить" + (res && res.status ? " (код " + res.status + ")" : "") + ". Попробуйте ещё раз.";
     }
     if (res.badge === false && isAdmin()) {
-      return "Отправлено, но без значка создателя: сервер не подтвердил права админа. " +
+      return "Отправлено, но без значка: сервер не подтвердил права админа. " +
              "Проверьте правила — почта в них должна точно совпадать с админской.";
     }
     return "";
@@ -1132,18 +1261,40 @@
   }
 
   /* ── аккаунты (Firebase Authentication) ──
-     API_KEY — ключ веб-приложения из настроек проекта Firebase.
-     ADMIN_EMAIL — почта админа: с неё доступно удаление. */
+     API_KEY — ключ веб-приложения из настроек проекта Firebase. */
   const API_KEY = "AIzaSyBblqcHOe4Gl7uwupT53FhIa-PXzIbQ7V0";
-  const ADMIN_EMAIL = "ilahrenov251@gmail.com";
+
+  /* ── роли ──
+     Значок выдаётся по почте аккаунта, а не по имени.
+     code — метка, которая уходит в базу (поле owner): 1 — создатель, 2 — фембой. */
+  const ROLE_DEFS = {
+    1: { code: 1, tag: "создатель", cls: "shine", tick: "tick", pill: "role" },
+    2: { code: 2, tag: "фембой", cls: "pink", tick: "tick pink-tick", pill: "role pink-role" }
+  };
+
+  var roleEmails = { 1: "ilahrenov251@gmail.com", 2: "adolfposter1945@gmail.com" };
 
   var authState = load("auth", null);
   var authMode = "login";
 
-  function isAdmin() {
-    return !!(authState && authState.email && ADMIN_EMAIL &&
-      authState.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+  function roleOf(email) {
+    if (!email) return null;
+    var e = String(email).trim().toLowerCase();
+    for (var code in roleEmails) {
+      var mail = roleEmails[code];
+      if (mail && String(mail).trim().toLowerCase() === e) return ROLE_DEFS[code];
+    }
+    return null;
   }
+
+  function roleByCode(code) {
+    if (code === null || code === undefined) return null;
+    return ROLE_DEFS[Number(code)] || null;
+  }
+
+  function myRole() { return authState ? roleOf(authState.email) : null; }
+
+  function isAdmin() { return !!myRole(); }
 
   function token() {
     if (!authState || !authState.idToken) return Promise.resolve(null);
@@ -1277,14 +1428,17 @@
     });
   }
 
-  /* значок создателя: только у сообщений с админского аккаунта */
+  /* значок роли: только у сообщений, отправленных с аккаунта из списка ROLES */
   function nameHtml(rec) {
-    var n = rec && typeof rec === "object" ? rec.name : rec;
-    var s = esc(n);
-    if (!(rec && typeof rec === "object" && rec.owner)) return s;
-    return '<span class="shine">' + s + "</span>" +
-           '<span class="tick" title="Создатель" aria-label="Создатель">✓</span>' +
-           '<span class="role">создатель</span>';
+    var isObj = rec && typeof rec === "object";
+    var s = esc(isObj ? rec.name : rec);
+    var role = isObj ? roleByCode(rec.owner) : null;
+    if (!role) return s;
+
+    var tag = esc(role.tag);
+    return '<span class="' + role.cls + '">' + s + "</span>" +
+           '<span class="' + role.tick + '" title="' + tag + '" aria-label="' + tag + '">✓</span>' +
+           '<span class="' + role.pill + '">' + tag + "</span>";
   }
 
   function timeLabel(ts) {
@@ -1499,7 +1653,8 @@
     var list = asArray(comments[openedPhoto]);
     comments[openedPhoto] = list;
     var entry = { name: name, text: text, ts: Date.now() };
-    if (isAdmin()) entry.owner = 1;
+    var meRole = myRole();
+    if (meRole) entry.owner = meRole.code;
     list.push(entry);
     save("comments", comments);
 
@@ -1567,7 +1722,8 @@
     if (!authState) { myName = name; save("name", myName); }
 
     var entry = { name: name, text: text, ts: Date.now(), mine: true };
-    if (isAdmin()) entry.owner = 1;
+    var meRole = myRole();
+    if (meRole) entry.owner = meRole.code;
     chat.push(entry);
     save("chat", chat);
 
@@ -1716,11 +1872,21 @@
       document.getElementById("profile-ava").textContent = (authState.name || authState.email).slice(0, 1).toUpperCase();
       var pname = document.getElementById("profile-name");
       pname.textContent = authState.name || "Участник";
-      pname.className = isAdmin() ? "shine" : "";
-      document.getElementById("profile-badge").hidden = !isAdmin();
+      var me = myRole();
+      var brow = document.getElementById("profile-badge");
+      pname.className = me ? me.cls : "";
+      if (me) {
+        var meTag = esc(me.tag);
+        brow.innerHTML = '<span class="' + me.tick + '">✓</span>' +
+                         '<span class="' + me.pill + '">' + meTag + "</span>";
+        brow.hidden = false;
+      } else {
+        brow.innerHTML = "";
+        brow.hidden = true;
+      }
       document.getElementById("profile-mail").textContent = authState.email;
-      document.getElementById("profile-role").textContent = isAdmin()
-        ? "Вы админ: можете удалять сообщения и комментарии."
+      document.getElementById("profile-role").textContent = me
+        ? "Вы " + me.tag + ": можете удалять сообщения и комментарии."
         : "Обычный аккаунт: сообщения подписываются вашим именем.";
     } else {
       btn.textContent = "Войти";
@@ -1788,7 +1954,8 @@
       renderAuth();
       if (chatSheet.classList.contains("open")) pullChat();
       if (openedPhoto) renderComments(openedPhoto);
-      authErr.textContent = isAdmin() ? "Вы вошли как админ." : "Готово, вы вошли.";
+      var loginRole = myRole();
+      authErr.textContent = loginRole ? "Вы вошли как " + loginRole.tag + "." : "Готово, вы вошли.";
     }).catch(function (e) {
       authErr.textContent = e && e.message ? e.message : "Не получилось. Попробуйте ещё раз.";
     }).then(function () {
@@ -1870,7 +2037,8 @@
       if (!replies[photo]) replies[photo] = {};
       if (!replies[photo][cid]) replies[photo][cid] = [];
       var rEntry = { name: name, text: text, ts: Date.now() };
-      if (isAdmin()) rEntry.owner = 1;
+      var myR = myRole();
+      if (myR) rEntry.owner = myR.code;
       replies[photo][cid].push(rEntry);
 
       rta.value = "";
@@ -1934,6 +2102,57 @@
     if (e.key === "ArrowLeft") show(current - 1);
     if (e.key === "ArrowRight") show(current + 1);
   });
+
+  /* ── фейковый бан (шутка): появляется через минуту после открытия сайта ── */
+  var BAN_DELAY = 60000;    /* через сколько выскочит */
+  var BAN_REVEAL = 12000;   /* через сколько появится кнопка «это шутка» */
+
+  function banWasShown() {
+    try { return sessionStorage.getItem("banShown") === "1"; } catch (e) { return false; }
+  }
+
+  function showFakeBan() {
+    if (isAdmin()) return;          /* админов не баним */
+    if (banWasShown()) return;      /* один раз за визит */
+
+    var el = document.getElementById("ban-screen");
+    if (!el) return;
+
+    try { sessionStorage.setItem("banShown", "1"); } catch (e) {}
+
+    var idEl = document.getElementById("ban-id");
+    if (idEl) idEl.textContent = "BAN-" + (100000 + Math.floor(Math.random() * 899999));
+
+    el.classList.add("open");
+    document.body.style.overflow = "hidden";
+
+    var btn = document.getElementById("ban-joke");
+    if (!btn) return;
+
+    btn.onclick = function () {
+      el.classList.remove("open");
+      document.body.style.overflow = "";
+    };
+
+    setTimeout(function () { btn.hidden = false; }, BAN_REVEAL);
+  }
+
+  setTimeout(showFakeBan, BAN_DELAY);
 </script>
+  <!-- фейковый бан: появляется через минуту, это шутка -->
+  <div class="ban-screen" id="ban-screen" role="alertdialog" aria-live="assertive">
+    <div class="ban-card">
+      <div class="ban-lock">🔒</div>
+      <div class="ban-title">Доступ заблокирован</div>
+      <p class="ban-sub">Ваш аккаунт забанен навсегда.<br>Вы больше не можете писать, комментировать и ставить реакции.</p>
+      <div class="ban-meta">
+        <div><span>Причина</span><b>Нарушение правил сообщества</b></div>
+        <div><span>Срок</span><b>Бессрочно</b></div>
+        <div><span>Номер обращения</span><b id="ban-id">—</b></div>
+      </div>
+      <p class="ban-note">Апелляция рассматривается в течение 30 рабочих дней. Повторная регистрация приведёт к блокировке по устройству.</p>
+      <button class="ban-joke" id="ban-joke" type="button" hidden>Это шутка. Продолжить</button>
+    </div>
+  </div>
 </body>
 </html>
