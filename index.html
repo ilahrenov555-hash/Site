@@ -786,6 +786,77 @@
   .who-line .meta .tr { margin-left: 0; }
   .msg .who-line .tr { margin-left: 4px; }
 
+  /* ── игры ── */
+  .games { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+
+  .game-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 14px 13px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--fg);
+    text-align: left;
+    cursor: pointer;
+    overflow: hidden;
+  }
+
+  .game-card:hover { border-color: rgba(167, 139, 250, .55); }
+  .game-card b { font-size: 14px; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+  .game-card span { font-size: 11px; color: var(--muted); }
+  .game-card .del { top: 4px; right: 4px; }
+
+  .game-add {
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px 16px;
+    border-radius: 999px;
+    border: 1px dashed rgba(167, 139, 250, .5);
+    background: rgba(167, 139, 250, .1);
+    color: var(--fg);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .game-add:hover { border-color: var(--violet); }
+
+  /* ── игра на весь экран ── */
+  .play-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+    background: #0d0817;
+  }
+
+  .play-sheet.open { display: flex; }
+
+  .play-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(13, 8, 23, .96);
+  }
+
+  .play-bar b {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .play-frame { flex: 1 1 auto; width: 100%; border: 0; background: #000; display: block; }
+
   .nick { cursor: pointer; }
   .nick:hover { text-decoration: underline; text-decoration-color: rgba(167, 139, 250, .6); }
 
@@ -932,6 +1003,11 @@
       <div class="info"><b>Люди</b><span>Декабрь 2026</span></div>
     </button>
   </div>
+
+  <div class="sec-title">Игры</div>
+  <div class="games" id="games"></div>
+  <button class="game-add" id="game-add" type="button" hidden>Загрузить игру</button>
+  <input type="file" id="game-file" accept=".html,.htm,text/html" hidden>
 
   <footer>
     <span>© 2026 Все права защищены Hussien</span>
@@ -1094,6 +1170,16 @@
       <p class="hint" id="person-note">Считается по чату, комментариям и ответам.</p>
     </div>
   </div>
+</div>
+
+<!-- игра на весь экран -->
+<div class="play-sheet" id="play-sheet">
+  <div class="play-bar">
+    <b id="play-name">Игра</b>
+    <button class="sheet-close" type="button" id="play-close" aria-label="Закрыть">✕</button>
+  </div>
+  <iframe class="play-frame" id="play-frame" sandbox="allow-scripts allow-forms allow-modals allow-pointer-lock"
+          allow="fullscreen; autoplay; gamepad" allowfullscreen referrerpolicy="no-referrer" title="Игра"></iframe>
 </div>
 
 <script>
@@ -1289,7 +1375,19 @@
     "Пароль должен быть от 6 символов": { tg: "Рамз бояд аз 6 аломат иборат бошад", en: "Password must be at least 6 characters" },
     "Слишком много попыток. Попробуйте позже": { tg: "Кӯшишҳо зиёданд. Баъдтар кӯшиш кунед", en: "Too many attempts. Try later" },
     "Аккаунт отключён": { tg: "Ҳисоб хомӯш карда шудааст", en: "Account disabled" },
-    "Вход по почте не включён в Firebase": { tg: "Даромадан бо почта дар Firebase фаъол нест", en: "Email sign-in is not enabled in Firebase" }
+    "Вход по почте не включён в Firebase": { tg: "Даромадан бо почта дар Firebase фаъол нест", en: "Email sign-in is not enabled in Firebase" },
+
+    "Игры": { tg: "Бозиҳо", en: "Games" },
+    "Игра": { tg: "Бозӣ", en: "Game" },
+    "Пока игр нет.": { tg: "Ҳоло бозӣ нест.", en: "No games yet." },
+    "Загрузить игру": { tg: "Бозиро бор кардан", en: "Upload a game" },
+    "Игра загружена.": { tg: "Бозӣ бор карда шуд.", en: "Game uploaded." },
+    "Не получилось загрузить игру.": { tg: "Бозӣ бор карда нашуд.", en: "Could not upload the game." },
+    "Нужен файл .html": { tg: "Файли .html лозим аст", en: "An .html file is required" },
+    "Файл больше 2 МБ.": { tg: "Файл аз 2 МБ калон аст.", en: "The file is larger than 2 MB." },
+    "Не получилось прочитать файл.": { tg: "Файлро хонда нашуд.", en: "Could not read the file." },
+    "Удалить игру?": { tg: "Бозиро нест кардан?", en: "Delete the game?" },
+    "Загрузка…": { tg: "Боркунӣ…", en: "Loading…" }
   };
 
   function t(s) {
@@ -1301,7 +1399,7 @@
   var i18nNodes = [];
 
   function collectStatic() {
-    var skip = "#photo-title, #dm-note";
+    var skip = "#photo-title, #dm-note, #play-name";
     var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
     var n;
     while ((n = walker.nextNode())) {
@@ -1360,6 +1458,7 @@
   var chat = load("chat", []);
   var avatars = load("avatars", {});
   var myName = load("name", "");
+  var games = {};
 
   /* ── облако (Firebase Realtime Database) ──
      Когда появится адрес базы, он вписывается сюда.
@@ -1537,6 +1636,8 @@
       if (openedPhoto) renderComments(openedPhoto);
       if (authState) renderAuth();
     }).catch(function () {});
+
+    pullGames();
   }
 
   /* ── аккаунты (Firebase Authentication) ──
@@ -2515,7 +2616,7 @@
   }, 6000);
 
   addEventListener("keydown", function (e) {
-    if (e.key === "Escape") { closePhoto(); closeChat(); closeDm(); closeAuth(); }
+    if (e.key === "Escape") { closePhoto(); closeChat(); closeDm(); closeAuth(); closePlay(); }
     if (e.key === "ArrowLeft") show(current - 1);
     if (e.key === "ArrowRight") show(current + 1);
   });
@@ -2785,6 +2886,216 @@
 
   applyAvaSize();
 
+  /* ── игры: список, загрузка (только админ), запуск ── */
+  var gameFile = document.getElementById("game-file");
+  var playSheet = document.getElementById("play-sheet");
+  var playFrame = document.getElementById("play-frame");
+  var playName = document.getElementById("play-name");
+
+  function sizeLabel(n) {
+    n = Number(n) || 0;
+    if (n < 1024) return n + " B";
+    if (n < 1048576) return Math.round(n / 1024) + " KB";
+    return (n / 1048576).toFixed(1) + " MB";
+  }
+
+  function pullGames() {
+    if (!DB) { renderGames(); return Promise.resolve(); }
+    return cloudGet("gmeta").then(function (data) {
+      games = {};
+      if (data && !data.error) {
+        Object.keys(data).forEach(function (id) {
+          var m = data[id];
+          if (!m || typeof m !== "object" || typeof m.name !== "string") return;
+          games[id] = {
+            id: id,
+            name: m.name || t("Игра"),
+            size: m.size || 0,
+            ts: m.ts || 0,
+            uid: m.uid || "",
+            by: m.by || ""
+          };
+        });
+      }
+      renderGames();
+    }).catch(function () { renderGames(); });
+  }
+
+  function renderGames() {
+    var box = document.getElementById("games");
+    var add = document.getElementById("game-add");
+    if (add) add.hidden = !isAdmin();
+    if (!box) return;
+
+    var list = Object.keys(games).map(function (id) { return games[id]; })
+      .sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+
+    if (!list.length) {
+      box.innerHTML = '<div class="empty-note">' + t("Пока игр нет.") + "</div>";
+      return;
+    }
+
+    box.innerHTML = list.map(function (g) {
+      var del = isAdmin()
+        ? '<button class="del" type="button" data-del-game="' + esc(g.id) + '" aria-label="' + t("Удалить") + '">✕</button>'
+        : "";
+      var meta = sizeLabel(g.size);
+      if (g.by) meta += " · " + esc(g.by);
+      return '<div class="game-card" data-play="' + esc(g.id) + '" role="button" tabindex="0">' + del +
+             "<b>" + esc(g.name) + "</b><span>" + meta + "</span></div>";
+    }).join("");
+  }
+
+  /* в песочнице у игры нет своего localStorage — подкладываем простое хранилище в памяти */
+  var GAME_SHIM = '<scr' + 'ipt>(function(){try{void window.localStorage;return}catch(e){}' +
+    'var m={};var s={getItem:function(k){return Object.prototype.hasOwnProperty.call(m,k)?m[k]:null},' +
+    'setItem:function(k,v){m[k]=String(v)},removeItem:function(k){delete m[k]},clear:function(){m={}},' +
+    'key:function(i){var k=Object.keys(m);return i<k.length?k[i]:null}};' +
+    'try{Object.defineProperty(window,"localStorage",{configurable:true,get:function(){return s}})}catch(e){}' +
+    'try{Object.defineProperty(window,"sessionStorage",{configurable:true,get:function(){return s}})}catch(e){}' +
+    '})();</scr' + 'ipt>';
+
+  function withShim(html) {
+    var i = html.search(/<script[\s>]/i);
+    if (i >= 0) return html.slice(0, i) + GAME_SHIM + html.slice(i);
+    var j = html.search(/<\/body>/i);
+    if (j >= 0) return html.slice(0, j) + GAME_SHIM + html.slice(j);
+    return html + GAME_SHIM;
+  }
+
+  function playGame(id) {
+    var g = games[id];
+    if (!g) return;
+
+    playName.textContent = g.name;
+    playFrame.srcdoc = '<body style="margin:0;background:#0d0817;color:#cfc6e8;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh">' + t("Загрузка…") + "</body>";
+    playSheet.classList.add("open");
+    document.body.style.overflow = "hidden";
+
+    fetch(cloudUrl("games/" + id), { cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (html) {
+        if (typeof html !== "string" || !html) throw new Error("empty");
+        playFrame.srcdoc = withShim(html);
+      })
+      .catch(function () {
+        playFrame.srcdoc = '<body style="margin:0;background:#0d0817;color:#cfc6e8;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;padding:24px">' + t("Не получилось загрузить игру.") + "</body>";
+      });
+  }
+
+  function closePlay() {
+    if (!playSheet.classList.contains("open")) return;
+    playSheet.classList.remove("open");
+    playFrame.srcdoc = "";
+    document.body.style.overflow = "";
+  }
+
+  document.getElementById("play-close").addEventListener("click", closePlay);
+
+  document.getElementById("games").addEventListener("click", function (e) {
+    var del = e.target.closest("[data-del-game]");
+    if (del) {
+      if (!isAdmin()) return;
+      if (!confirm(t("Удалить игру?"))) return;
+      var gid = del.getAttribute("data-del-game");
+      Promise.all([
+        cloudDelete("games/" + gid),
+        cloudDelete("gmeta/" + gid)
+      ]).then(function () {
+        delete games[gid];
+        renderGames();
+      });
+      return;
+    }
+
+    var card = e.target.closest("[data-play]");
+    if (!card) return;
+    playGame(card.getAttribute("data-play"));
+  });
+
+  document.getElementById("games").addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    var card = e.target.closest("[data-play]");
+    if (!card) return;
+    e.preventDefault();
+    playGame(card.getAttribute("data-play"));
+  });
+
+  document.getElementById("game-add").addEventListener("click", function () {
+    if (!isAdmin()) { alert(t("Сначала войдите в аккаунт.")); return; }
+    gameFile.click();
+  });
+
+  gameFile.addEventListener("change", function () {
+    var f = gameFile.files && gameFile.files[0];
+    gameFile.value = "";
+    if (!f) return;
+    if (!isAdmin()) { alert(t("Сначала войдите в аккаунт.")); return; }
+
+    if (!/\.html?$/i.test(f.name)) { alert(t("Нужен файл .html")); return; }
+    if (f.size > 2 * 1024 * 1024) { alert(t("Файл больше 2 МБ.")); return; }
+
+    var name = f.name.replace(/\.html?$/i, "").replace(/[_-]+/g, " ").trim();
+    if (!name) name = t("Игра");
+
+    var reader = new FileReader();
+    reader.onload = function () { saveGame(name, String(reader.result || ""), f.size); };
+    reader.onerror = function () { alert(t("Не получилось прочитать файл.")); };
+    reader.readAsText(f);
+  });
+
+  function gameBusy(on) {
+    var b = document.getElementById("game-add");
+    if (!b) return;
+    b.disabled = !!on;
+    b.textContent = on ? t("Загрузка…") : t("Загрузить игру");
+  }
+
+  function saveGame(name, html, size) {
+    if (!html) return;
+    gameBusy(true);
+
+    ensureUid().then(function (uid) {
+      return token().then(function (tk) {
+        if (!tk) throw new Error("noauth");
+
+        var id = "g" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        var meta = {
+          name: name.slice(0, 40),
+          size: size || html.length,
+          ts: Date.now()
+        };
+        if (uid) meta.uid = uid;
+        if (myName) meta.by = myName;
+
+        return fetch(cloudUrl("games/" + id) + "?auth=" + encodeURIComponent(tk), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(html)
+        }).then(function (r) {
+          if (!r.ok) throw new Error("http " + r.status);
+          return fetch(cloudUrl("gmeta/" + id) + "?auth=" + encodeURIComponent(tk), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(meta)
+          });
+        }).then(function (r) {
+          if (!r.ok) throw new Error("http " + r.status);
+          games[id] = { id: id, name: meta.name, size: meta.size, ts: meta.ts, uid: meta.uid, by: meta.by };
+          renderGames();
+          gameBusy(false);
+          alert(t("Игра загружена."));
+        });
+      });
+    }).catch(function () {
+      gameBusy(false);
+      alert(t("Не получилось загрузить игру."));
+    });
+  }
+
+  /* раз в полминуты проверяем, не появились ли новые игры */
+  setInterval(pullGames, 30000);
+
   /* старые сессии сохранены без uid — достаём его из токена */
   ensureUid().then(function (uid) {
     if (!uid) return;
@@ -2817,6 +3128,7 @@
     refreshAllQuick();
     applyCloudHints();
     renderAuth();
+    renderGames();
     if (personSheet.classList.contains("open")) renderPerson(personOpen.uid, personOpen.name);
     if (dmSheet.classList.contains("open") && isAdmin()) renderInbox();
   }
