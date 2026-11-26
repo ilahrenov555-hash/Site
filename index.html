@@ -917,17 +917,14 @@
   .nick { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
   .role { white-space: nowrap; }
 
-  .chip {
-    padding: 7px 12px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
+  .ava-size-row { display: flex; align-items: center; gap: 12px; }
+  .ava-size-row input[type="range"] {
+    flex: 1 1 auto;
+    height: 26px;
+    accent-color: #a78bfa;
     background: transparent;
-    color: var(--fg);
-    font-size: 12.5px;
-    cursor: pointer;
   }
-
-  .chip.on { border-color: var(--violet); background: rgba(167, 139, 250, .16); }
+  #ava-range-val { min-width: 46px; text-align: right; font-size: 12px; color: var(--muted); }
 
   #person-sub { font-size: 12px; color: var(--muted); }
   #person-name { font-size: 16px; }
@@ -1133,10 +1130,9 @@
       </div>
 
       <div class="sec-title" style="margin: 18px 0 8px;">Размер аватарок</div>
-      <div class="row2" id="ava-sizes">
-        <button class="chip" type="button" data-ava-size="18">мелкие</button>
-        <button class="chip" type="button" data-ava-size="24">средние</button>
-        <button class="chip" type="button" data-ava-size="32">крупные</button>
+      <div class="ava-size-row">
+        <input type="range" id="ava-range" min="16" max="44" step="1" value="22" aria-label="Размер аватарок">
+        <span id="ava-range-val">22 px</span>
       </div>
 
     </div>
@@ -1252,7 +1248,10 @@
       Object.keys(data).forEach(function (k) { body[k] = data[k]; });
       var role = myRole();
       if (t && role) body.owner = role.code;
-      if (t && authState && authState.uid) body.uid = authState.uid;
+
+      var uid = (authState && authState.uid) || (t ? uidFromToken(t) : "");
+      if (t && uid) body.uid = uid;
+      if (uid && authState && !authState.uid) { authState.uid = uid; save("auth", authState); }
 
       var url = cloudUrl(path) + (t ? "?auth=" + encodeURIComponent(t) : "");
 
@@ -1422,6 +1421,26 @@
   function myRole() { return authState ? roleOf(authState.email) : null; }
 
   function isAdmin() { return !!myRole(); }
+
+  /* uid из токена: нужен для старых сессий, сохранённых без него */
+  function uidFromToken(t) {
+    try {
+      var p = String(t).split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+      var pad = p + "===".slice((p.length + 3) % 4);
+      var d = JSON.parse(atob(pad));
+      return d.user_id || d.sub || "";
+    } catch (e) { return ""; }
+  }
+
+  function ensureUid() {
+    if (!authState) return Promise.resolve("");
+    if (authState.uid) return Promise.resolve(authState.uid);
+    return token().then(function (t) {
+      var uid = t ? uidFromToken(t) : "";
+      if (uid) { authState.uid = uid; save("auth", authState); }
+      return uid;
+    });
+  }
 
   function token() {
     if (!authState || !authState.idToken) return Promise.resolve(null);
@@ -2456,7 +2475,7 @@
   var avaFile = document.getElementById("ava-file");
 
   document.getElementById("ava-pick").addEventListener("click", function () {
-    if (!authState || !authState.uid) { alert("Сначала войдите в аккаунт."); return; }
+    if (!authState) { alert("Сначала войдите в аккаунт."); return; }
     avaFile.click();
   });
 
@@ -2464,7 +2483,7 @@
     var f = avaFile.files && avaFile.files[0];
     avaFile.value = "";
     if (!f) return;
-    if (!authState || !authState.uid) { alert("Сначала войдите в аккаунт."); return; }
+    if (!authState) { alert("Сначала войдите в аккаунт."); return; }
 
     var reader = new FileReader();
     reader.onload = function () {
@@ -2480,7 +2499,11 @@
 
         var url = c.toDataURL("image/jpeg", 0.72);
         if (url.length > 40000) url = c.toDataURL("image/jpeg", 0.5);
-        saveMyAvatar(authState.uid, url);
+
+        ensureUid().then(function (uid) {
+          if (!uid) { alert("Не удалось определить аккаунт. Войдите заново."); return; }
+          saveMyAvatar(uid, url);
+        });
       };
       img.onerror = function () { alert("Не получилось прочитать картинку."); };
       img.src = reader.result;
@@ -2511,25 +2534,34 @@
     });
   }
 
-  /* ── размер аватарок ── */
+  /* ── размер аватарок: ползунок ── */
   var avaSize = load("avaSize", 22);
+  var avaRange = document.getElementById("ava-range");
+  var avaRangeVal = document.getElementById("ava-range-val");
 
   function applyAvaSize() {
     document.documentElement.style.setProperty("--ava", avaSize + "px");
-    document.querySelectorAll("[data-ava-size]").forEach(function (b) {
-      b.classList.toggle("on", Number(b.getAttribute("data-ava-size")) === Number(avaSize));
-    });
+    if (avaRange) avaRange.value = avaSize;
+    if (avaRangeVal) avaRangeVal.textContent = avaSize + " px";
   }
 
-  document.querySelectorAll("[data-ava-size]").forEach(function (b) {
-    b.addEventListener("click", function () {
-      avaSize = Number(b.getAttribute("data-ava-size")) || 22;
-      save("avaSize", avaSize);
+  if (avaRange) {
+    avaRange.addEventListener("input", function () {
+      avaSize = Number(avaRange.value) || 22;
       applyAvaSize();
     });
-  });
+    avaRange.addEventListener("change", function () { save("avaSize", avaSize); });
+  }
 
   applyAvaSize();
+
+  /* старые сессии сохранены без uid — достаём его из токена */
+  ensureUid().then(function (uid) {
+    if (!uid) return;
+    renderAuth();
+    if (chatSheet.classList.contains("open")) renderChat();
+    if (openedPhoto) renderComments(openedPhoto);
+  });
 </script>
   <!-- фейковый бан: появляется через минуту, это шутка -->
   <div class="ban-screen" id="ban-screen" role="alertdialog" aria-live="assertive">
